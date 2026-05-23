@@ -110,11 +110,12 @@ export default function SettingsForm({ userSettings, onSave, onCancel, loading }
                         value={formData.emergencyPhone}
                         onChange={handleChange}
                         className="w-full bg-void border border-zinc-700 rounded-lg p-3 text-white placeholder-zinc-600 focus:border-danger outline-none"
-                        placeholder="e.g. +1234567890, +0987654321"
+                        placeholder="e.g. 9876543210, +919876543210"
                         required
                     />
                     <div className="text-xs text-zinc-500 space-y-1 mt-1">
                         <p>Separate multiple numbers with commas.</p>
+                        <p><b>Format:</b> Plain 10-digits for Domestic (e.g., 9876543210), or use +CountryCode for International (e.g., +919876543210).</p>
                         <p className="text-yellow-500/80"><b>Recommendation:</b> Place a trusted personal contact (Family/Friend) as the very <b>first</b> number. Android restricts automated calls to standard emergency numbers (100, 112, etc.).</p>
                     </div>
                 </div>

@@ -174,7 +174,6 @@ class SirenService {
                 if (response.ok) {
                     const arrayBuffer = await response.arrayBuffer();
                     buffer = await this.ctx.decodeAudioData(arrayBuffer);
-                    buffer = await this.ctx.decodeAudioData(arrayBuffer); // Double decode line removed in cleanup, keeping consistent
                     break;
                 }
             } catch (e) {

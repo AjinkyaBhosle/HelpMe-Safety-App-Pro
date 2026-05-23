@@ -104,9 +104,17 @@ const InfoView = ({ onClose }) => (
       </section>
 
       <section>
-        <h3 className="font-semibold text-white mb-2">Troubleshooting</h3>
-        <p className="text-xs text-zinc-500">
-          If alerts aren't sending, check that you have mobile signal and that "Battery Optimization" is disabled for this app.
+        <h3 className="font-semibold text-white mb-2">Troubleshooting & Background Fixes</h3>
+        <p className="text-xs text-zinc-500 mb-2">
+          If alerts aren't sending or Voice SOS stops working after closing the app, ensure "Battery Optimization" is disabled.
+        </p>
+        <p className="text-xs text-yellow-500/90 font-medium">
+          <b>OnePlus, Oppo, Vivo, & Xiaomi Users:</b><br/>
+          Your phone's OS aggressively kills apps when you swipe them away. To ensure Voice SOS runs 24/7:<br/>
+          1. Open your "Recent Apps" menu (swipe up and hold).<br/>
+          2. Tap the 3 dots (or long-press) on the Help Me! app window.<br/>
+          3. Tap <b>Lock</b> (a padlock icon will appear).<br/>
+          This prevents the system from force-stopping the background safety listeners!
         </p>
       </section>
     </div>
@@ -501,6 +509,8 @@ function App() {
       setView('history');
     } else if (action === 'about') {
       setView('about');
+    } else if (action === 'info') {
+      setView('info');
     } else if (action === 'privacy') {
       setView('privacy');
     } else if (action === 'safety-cam') {
@@ -538,7 +548,15 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center relative overflow-hidden text-white font-sans">
+    <div 
+      className="min-h-screen bg-black flex flex-col items-center relative overflow-hidden text-white font-sans"
+      style={{
+        paddingTop: 'env(safe-area-inset-top)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        paddingLeft: 'env(safe-area-inset-left)',
+        paddingRight: 'env(safe-area-inset-right)',
+      }}
+    >
 
       {/* Menu Header (Only visible if NOT in dashboard) */}
       {view !== 'dashboard' && (

@@ -32,9 +32,9 @@ class WakeWordService : Service(), RecognitionListener {
     private val TAG = "WakeWordService"
     private var wakeLock: PowerManager.WakeLock? = null
     
-    // Grammar: "help me" is the ONLY trigger phrase.
-    // "[unk]" absorbs all other audio so Vosk doesn't force-match noise to "help me".
-    private val WAKE_GRAMMAR = "[\"help me\", \"help\", \"[unk]\"]"
+    // Grammar: "help me" is the only trigger phrase.
+    // "[unk]" absorbs all other audio (including pauses/noise) so Vosk doesn't force-match.
+    private val WAKE_GRAMMAR = "[\"help me\", \"[unk]\"]"
     
     private var panicTriggeredRecently = false
 
@@ -79,7 +79,9 @@ class WakeWordService : Service(), RecognitionListener {
             )
             
             val alarmManager = applicationContext.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
-            alarmManager.setExact(
+            // Use set() instead of setExact() to avoid Android 14+ SecurityExceptions 
+            // if SCHEDULE_EXACT_ALARM is not granted or revoked by the system.
+            alarmManager.set(
                 android.app.AlarmManager.ELAPSED_REALTIME_WAKEUP,
                 android.os.SystemClock.elapsedRealtime() + 1000, // Restart in 1 second
                 pendingIntent
@@ -215,15 +217,10 @@ class WakeWordService : Service(), RecognitionListener {
     private fun checkTrigger(text: String, isPartial: Boolean) {
         if (panicTriggeredRecently) return
 
-        // Trigger ONLY on "help me" (exact two-word phrase).
-        if (text.contains("help me")) {
-            // If it's a long conversation, Vosk outputs many [unk]s. 
-            // We ignore partial results if there are too many [unk]s to avoid false triggers from noise.
-            val unkCount = text.split("[unk]").size - 1
-            if (isPartial && unkCount >= 2) {
-                return
-            }
-
+        // Trigger ONLY on variations of "help me".
+        // By checking if BOTH words exist in the partial/final string, we successfully catch:
+        // "help me", "help [unk] me" (help ... me), and elongated cries that Vosk maps to "help" and "me".
+        if (text.contains("help") && text.contains("me")) {
             Log.d(TAG, "🚨🚨 VOICE SOS TRIGGERED: '$text' 🚨🚨")
             panicTriggeredRecently = true
             
