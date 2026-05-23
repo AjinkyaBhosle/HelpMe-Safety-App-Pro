@@ -276,7 +276,7 @@ const SettingsMenu = ({ isOpen, onClose, onNavigate, isPro, onUpgradeRequest }) 
 
                                 {/* Information Links */}
                                 <div className="border-t border-zinc-800/50 pt-2 pb-2">
-                                    <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider px-4 py-2">Information</h4>
+                                    <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider px-4 py-2">Help & Info</h4>
                                     {infoItems.map((item, index) => {
                                         const Icon = item.icon;
                                         return (
