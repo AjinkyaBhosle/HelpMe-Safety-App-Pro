@@ -91,6 +91,16 @@ class CheckInWorker(context: Context, workerParams: WorkerParameters) : Coroutin
                 }
             }
 
+            // 4. Trigger Emergency Call to the Primary (First) Contact
+            try {
+                if (contacts.isNotEmpty()) {
+                    Log.d("CheckInWorker", "Triggering Emergency Call to primary contact")
+                    EmergencyCallHelper.makeEmergencyCall(applicationContext, contacts[0])
+                }
+            } catch (e: Exception) {
+                Log.e("CheckInWorker", "Failed to place emergency call", e)
+            }
+
             return Result.success()
 
         } catch (e: Exception) {
