@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserCog, History, Info, X, Flashlight, Siren, Mic, Settings, Shield, Video, Timer, Sparkles, AlertTriangle } from 'lucide-react';
+import { UserCog, History, Info, X, Flashlight, Siren, Mic, Settings, Shield, Video, Timer, Sparkles, AlertTriangle, HelpCircle } from 'lucide-react';
 
 const HumanHeadSpeaking = ({ size = 24, className = "", ...props }) => (
     <svg 
@@ -107,6 +107,13 @@ const SettingsMenu = ({ isOpen, onClose, onNavigate, isPro, onUpgradeRequest }) 
     ];
 
     const infoItems = [
+        {
+            icon: HelpCircle,
+            label: 'How to Use',
+            description: 'Setup guide & troubleshooting',
+            action: 'info',
+            color: 'text-blue-400'
+        },
         {
             icon: Shield,
             label: 'Privacy & Policy',
