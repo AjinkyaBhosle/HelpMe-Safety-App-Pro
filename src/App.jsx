@@ -368,6 +368,21 @@ function App() {
         } catch (overlayErr) {
           console.warn("Failed to check overlay permission", overlayErr);
         }
+        
+        try {
+          const batStatus = await SmsPlugin.isIgnoringBatteryOptimizations();
+          if (!batStatus.granted) {
+            const batConfirm = confirm(
+              "🔋 Battery Optimization\n\n" +
+              "To ensure 'Voice SOS' and 'Scheduled Check-in' work reliably in the background, please disable battery optimization for 'Help Me!' in the next screen."
+            );
+            if (batConfirm) {
+              await SmsPlugin.openBatteryOptimizationSettings();
+            }
+          }
+        } catch (batErr) {
+          console.warn("Failed to check battery optimization", batErr);
+        }
       }
     } catch (e) {
       console.error("Failed to request permissions", e);

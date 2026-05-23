@@ -99,6 +99,39 @@ class SmsPlugin : Plugin() {
     }
 
     @PluginMethod
+    fun isIgnoringBatteryOptimizations(call: PluginCall) {
+        try {
+            val pm = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+            val isIgnoring = pm.isIgnoringBatteryOptimizations(context.packageName)
+            call.resolve(JSObject().put("granted", isIgnoring))
+        } catch (e: Exception) {
+            call.resolve(JSObject().put("granted", false))
+        }
+    }
+
+    @PluginMethod
+    fun openBatteryOptimizationSettings(call: PluginCall) {
+        try {
+            // Direct intent to whitelist this specific app (one-tap dialog)
+            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+            intent.data = Uri.parse("package:" + context.packageName)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+            call.resolve()
+        } catch (e: Exception) {
+            // Fallback: open the general battery optimization list
+            try {
+                val fallback = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(fallback)
+                call.resolve()
+            } catch (e2: Exception) {
+                call.reject("Could not open battery settings: " + e2.message)
+            }
+        }
+    }
+
+    @PluginMethod
     fun openOverlaySettings(call: PluginCall) {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(context)) {

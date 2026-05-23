@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, AlertTriangle, Check, Send, Phone, MapPin, Mic, Camera } from 'lucide-react';
+import { Shield, AlertTriangle, Check, Send, Phone, MapPin, Mic, Camera, Battery } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { hapticService } from '../services/HapticService';
 
@@ -98,6 +98,18 @@ const PermissionDisclosureModal = ({ isOpen, onAccept }) => {
                                 <h3 className="text-white font-medium text-sm">Background Monitoring</h3>
                                 <p className="text-zinc-500 text-xs mt-1">
                                     With your approval, this ensures the app works reliably in the background when you need it most.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <div className="mt-1 bg-zinc-800 p-2 rounded-lg h-fit">
+                                <Battery className="w-4 h-4 text-yellow-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-white font-medium text-sm">Battery Optimization</h3>
+                                <p className="text-zinc-500 text-xs mt-1">
+                                    Disabling battery optimization ensures Voice SOS and Safety Timer continue working reliably in the background.
                                 </p>
                             </div>
                         </div>
