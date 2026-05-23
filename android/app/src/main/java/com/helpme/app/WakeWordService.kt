@@ -65,9 +65,30 @@ class WakeWordService : Service(), RecognitionListener {
      * Instead, we ensure the service survives the app swipe.
      */
     override fun onTaskRemoved(rootIntent: Intent?) {
-        Log.d(TAG, "App swiped away — WakeWordService persisting via START_STICKY")
-        // Do NOT call stopSelf() or stop the speech service.
-        // The foreground notification + START_STICKY keeps us alive.
+        Log.d(TAG, "App swiped away — WakeWordService attempting aggressive restart")
+        
+        try {
+            // Aggressively attempt to restart the service via AlarmManager if swiped away
+            val restartIntent = Intent(applicationContext, WakeWordService::class.java)
+            restartIntent.setPackage(packageName)
+            val pendingIntent = PendingIntent.getService(
+                applicationContext,
+                1,
+                restartIntent,
+                PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
+            )
+            
+            val alarmManager = applicationContext.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+            alarmManager.setExact(
+                android.app.AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                android.os.SystemClock.elapsedRealtime() + 1000, // Restart in 1 second
+                pendingIntent
+            )
+            Log.d(TAG, "AlarmManager set to revive WakeWordService")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to set restart alarm", e)
+        }
+
         super.onTaskRemoved(rootIntent)
     }
 
