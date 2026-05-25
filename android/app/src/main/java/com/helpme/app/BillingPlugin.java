@@ -41,6 +41,19 @@ public class BillingPlugin extends Plugin implements PurchasesUpdatedListener {
     // We store the current call to resolve it after purchase flow finishes
     private PluginCall currentPurchaseCall = null;
 
+    /**
+     * Checks if the app was installed from the Google Play Store.
+     * If not (e.g. Android Studio, ADB, APK download), it's considered sideloaded.
+     */
+    private boolean isSideloaded() {
+        try {
+            String installer = getContext().getPackageManager().getInstallerPackageName(getContext().getPackageName());
+            return installer == null || !installer.equals("com.android.vending");
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
     @Override
     public void load() {
         super.load();
@@ -149,6 +162,13 @@ public class BillingPlugin extends Plugin implements PurchasesUpdatedListener {
 
     @PluginMethod
     public void getProStatus(PluginCall call) {
+        if (isSideloaded()) {
+            JSObject ret = new JSObject();
+            ret.put("isPro", true);
+            call.resolve(ret);
+            return;
+        }
+
         boolean cachedIsPro = sharedPrefs.getBoolean(PREF_IS_PRO_KEY, false);
         JSObject ret = new JSObject();
         ret.put("isPro", cachedIsPro);
@@ -157,6 +177,13 @@ public class BillingPlugin extends Plugin implements PurchasesUpdatedListener {
 
     @PluginMethod
     public void restorePurchases(PluginCall call) {
+        if (isSideloaded()) {
+            JSObject ret = new JSObject();
+            ret.put("isPro", true);
+            call.resolve(ret);
+            return;
+        }
+
         Runnable restoreAction = () -> {
             billingClient.queryPurchasesAsync(
                     QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build(),
@@ -178,6 +205,14 @@ public class BillingPlugin extends Plugin implements PurchasesUpdatedListener {
 
     @PluginMethod
     public void purchasePro(PluginCall call) {
+        if (isSideloaded()) {
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            ret.put("isPro", true);
+            call.resolve(ret);
+            return;
+        }
+
         currentPurchaseCall = call;
 
         Runnable purchaseAction = () -> {

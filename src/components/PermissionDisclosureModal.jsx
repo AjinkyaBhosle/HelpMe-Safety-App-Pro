@@ -111,6 +111,14 @@ const PermissionDisclosureModal = ({ isOpen, onAccept }) => {
                                 <p className="text-zinc-500 text-xs mt-1">
                                     Disabling battery optimization ensures Voice SOS and Safety Timer continue working reliably in the background.
                                 </p>
+                                <div className="mt-3 bg-red-900/20 border border-red-500/30 rounded p-3">
+                                    <h4 className="text-red-400 font-semibold text-xs mb-1">🚨 Critical for Background Reliability:</h4>
+                                    <ol className="text-red-200 text-[11px] list-decimal ml-3 space-y-1">
+                                        <li>Open your phone's <b>Settings</b> app.</li>
+                                        <li>Go to <b>Apps &rarr; App Management &rarr; HelpMe</b> (or <b>Battery &rarr; App Battery Management</b>).</li>
+                                        <li>Turn ON <b>"Allow Background Activity"</b> or set to <b>"Unrestricted"</b>.</li>
+                                    </ol>
+                                </div>
                             </div>
                         </div>
                     </div>

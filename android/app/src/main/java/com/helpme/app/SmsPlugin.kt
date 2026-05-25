@@ -111,22 +111,34 @@ class SmsPlugin : Plugin() {
 
     @PluginMethod
     fun openBatteryOptimizationSettings(call: PluginCall) {
+        val manufacturer = Build.MANUFACTURER.lowercase(java.util.Locale.ROOT)
+        val isAggressiveOEM = listOf("oppo", "oneplus", "xiaomi", "redmi", "poco", "vivo", "realme").any { manufacturer.contains(it) }
+
         try {
-            // Direct intent to whitelist this specific app (one-tap dialog)
-            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
-            intent.data = Uri.parse("package:" + context.packageName)
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
+            if (isAggressiveOEM) {
+                // Open App Info for aggressive OEMs so they can enable Auto-Launch and Background Activity
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                intent.data = Uri.parse("package:" + context.packageName)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
+            } else {
+                // Standard Android one-tap dialog
+                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+                intent.data = Uri.parse("package:" + context.packageName)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
+            }
             call.resolve()
         } catch (e: Exception) {
-            // Fallback: open the general battery optimization list
+            // Fallback to App Info if anything fails
             try {
-                val fallback = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
-                fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                context.startActivity(fallback)
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                intent.data = Uri.parse("package:" + context.packageName)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
                 call.resolve()
             } catch (e2: Exception) {
-                call.reject("Could not open battery settings: " + e2.message)
+                call.reject("Could not open settings: " + e2.message)
             }
         }
     }
@@ -164,6 +176,7 @@ class SmsPlugin : Plugin() {
             } else {
                 context.startService(intent)
             }
+            context.getSharedPreferences("helpme_prefs", Context.MODE_PRIVATE).edit().putBoolean("voice_sos_enabled", true).apply()
             call.resolve()
         } catch (e: Exception) {
             call.reject("Failed to start voice listener", e)
@@ -175,6 +188,7 @@ class SmsPlugin : Plugin() {
         try {
             val intent = Intent(context, WakeWordService::class.java)
             context.stopService(intent)
+            context.getSharedPreferences("helpme_prefs", Context.MODE_PRIVATE).edit().putBoolean("voice_sos_enabled", false).apply()
             call.resolve()
         } catch (e: Exception) {
             call.reject("Failed to stop voice listener", e)

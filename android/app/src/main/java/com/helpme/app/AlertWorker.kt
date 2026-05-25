@@ -18,6 +18,8 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import androidx.work.ForegroundInfo
 import android.content.pm.ServiceInfo
+import android.database.sqlite.SQLiteDatabase
+import java.io.File
 
 class AlertWorker(context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
 
@@ -107,16 +109,41 @@ class AlertWorker(context: Context, workerParams: WorkerParameters) : CoroutineW
                     val message1 = baseMessage.replace("🚨 EMERGENCY ALERT 🚨", "🚨 EMERGENCY ALERT [1/2] 🚨")
                     SmsSenderHardened.sendEmergencySMS(applicationContext, contact, message1)
                     
-                    delay(3000)
+                    kotlinx.coroutines.delay(3000)
                     
                     val message2 = baseMessage.replace("🚨 EMERGENCY ALERT 🚨", "🚨 EMERGENCY ALERT [2/2] 🚨")
                     SmsSenderHardened.sendEmergencySMS(applicationContext, contact, message2)
                 } catch (e: Exception) {
-                    Log.e("AlertWorker", "SMS send exception: ${e.message}")
+                    Log.e("AlertWorker", "Failed to send SMS to $contact", e)
                 }
             }
             
+            
             store.setAlertSent(true)
+
+            // 7. Save Panic History to Native SQLite Database
+            try {
+                val dbFile = File(applicationContext.getDatabasePath("are_you_dead_dbSQLite.db").absolutePath)
+                if (dbFile.exists()) {
+                    val db = SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READWRITE)
+                    
+                    val timestamp = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.ENGLISH).apply {
+                        timeZone = java.util.TimeZone.getTimeZone("UTC")
+                    }.format(java.util.Date())
+                    
+                    // The CapacitorSQLite plugin stores boolean as 1/0
+                    val sql = "INSERT INTO panic_history (timestamp, location, battery, contactNumber, smsSent, callMade) VALUES (?, ?, ?, ?, 1, 1)"
+                    db.execSQL(sql, arrayOf(timestamp, locationLink, batLevel.toString(), store.getContacts().firstOrNull() ?: "Unknown"))
+                    
+                    db.close()
+                    Log.d("AlertWorker", "Native panic history recorded to SQLite")
+                } else {
+                    Log.w("AlertWorker", "SQLite DB not found, cannot record panic history natively")
+                }
+            } catch (e: Exception) {
+                Log.e("AlertWorker", "Failed to save panic history natively: ${e.message}")
+            }
+
             return Result.success()
             
         } catch(e: Exception) { 

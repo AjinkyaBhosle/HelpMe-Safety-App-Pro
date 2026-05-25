@@ -16,6 +16,9 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import android.database.sqlite.SQLiteDatabase
+import java.io.File
+import kotlinx.coroutines.delay
 
 class CheckInWorker(context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
 
@@ -64,7 +67,11 @@ class CheckInWorker(context: Context, workerParams: WorkerParameters) : Coroutin
                 Log.e("CheckInWorker", "Location fetch failed with exception", e)
             }
 
-            // 2. Construct Message
+            // 2. Get Battery Level
+            val bm = applicationContext.getSystemService(Context.BATTERY_SERVICE) as android.os.BatteryManager
+            val batLevel = bm.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY)
+
+            // 2.5. Construct Message (Using original formatting)
             val time = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault()).format(java.util.Date())
             val message = """
                 🚨 MISSED CHECK-IN 🚨
@@ -72,6 +79,7 @@ class CheckInWorker(context: Context, workerParams: WorkerParameters) : Coroutin
                 I failed to confirm I am safe.
                 
                 Location: $locationLink
+                Battery: $batLevel%
                 Time: $time
             """.trimIndent()
 
@@ -83,9 +91,16 @@ class CheckInWorker(context: Context, workerParams: WorkerParameters) : Coroutin
                 return Result.failure()
             }
 
+            // Send SMS (TWICE as requested)
             for (contact in contacts) {
                 try {
-                    SmsSenderHardened.sendEmergencySMS(applicationContext, contact, message)
+                    val message1 = message.replace("🚨 MISSED CHECK-IN 🚨", "🚨 MISSED CHECK-IN [1/2] 🚨")
+                    SmsSenderHardened.sendEmergencySMS(applicationContext, contact, message1)
+                    
+                    kotlinx.coroutines.delay(3000)
+                    
+                    val message2 = message.replace("🚨 MISSED CHECK-IN 🚨", "🚨 MISSED CHECK-IN [2/2] 🚨")
+                    SmsSenderHardened.sendEmergencySMS(applicationContext, contact, message2)
                 } catch (e: Exception) {
                     Log.e("CheckInWorker", "Failed to send SMS to $contact", e)
                 }
@@ -99,6 +114,29 @@ class CheckInWorker(context: Context, workerParams: WorkerParameters) : Coroutin
                 }
             } catch (e: Exception) {
                 Log.e("CheckInWorker", "Failed to place emergency call", e)
+            }
+
+            // 5. Save Panic History to Native SQLite Database
+            try {
+                val dbFile = File(applicationContext.getDatabasePath("are_you_dead_dbSQLite.db").absolutePath)
+                if (dbFile.exists()) {
+                    val db = SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READWRITE)
+                    
+                    val timestamp = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.ENGLISH).apply {
+                        timeZone = java.util.TimeZone.getTimeZone("UTC")
+                    }.format(java.util.Date())
+
+                    // The Capacitor SQLite database stores boolean as 1/0
+                    val sql = "INSERT INTO panic_history (timestamp, location, battery, contactNumber, smsSent, callMade) VALUES (?, ?, ?, ?, 1, 1)"
+                    db.execSQL(sql, arrayOf(timestamp, locationLink, batLevel.toString(), contacts.firstOrNull() ?: "Unknown"))
+                    
+                    db.close()
+                    Log.d("CheckInWorker", "Native panic history recorded to SQLite")
+                } else {
+                    Log.w("CheckInWorker", "SQLite DB not found, cannot record panic history natively")
+                }
+            } catch (e: Exception) {
+                Log.e("CheckInWorker", "Failed to save panic history natively: ${e.message}")
             }
 
             return Result.success()

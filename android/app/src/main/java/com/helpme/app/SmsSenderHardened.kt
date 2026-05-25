@@ -74,13 +74,12 @@ object SmsSenderHardened {
                     
                     for (sub in subs) {
                         try {
-                            val smsManager = context.getSystemService(SmsManager::class.java)
-                                .createForSubscriptionId(sub.subscriptionId)
-                            
-                            sendViaSmsManager(smsManager, phone, message, sentIntent)
-                            Log.i("SMS", "✅ Sent via SIM slot ${sub.simSlotIndex}")
-                            return true
-                            
+                            val smsManager = getSmsManagerForSub(context, sub.subscriptionId)
+                            if (smsManager != null) {
+                                sendViaSmsManager(smsManager, phone, message, sentIntent)
+                                Log.i("SMS", "✅ Sent via SIM slot ${sub.simSlotIndex}")
+                                return true
+                            }
                         } catch (e: Exception) {
                             Log.w("SMS", "SIM ${sub.simSlotIndex} failed: ${e.message}, trying next...")
                         }
@@ -93,20 +92,35 @@ object SmsSenderHardened {
         
         // Fallback: Use default SIM
         try {
-            val smsManager = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                context.getSystemService(SmsManager::class.java)
-            } else {
-                @Suppress("DEPRECATION")
-                SmsManager.getDefault()
+            val smsManager = getSmsManagerForSub(context, -1)
+            if (smsManager != null) {
+                sendViaSmsManager(smsManager, phone, message, sentIntent)
+                Log.i("SMS", "✅ Sent via default SIM")
+                return true
             }
-            
-            sendViaSmsManager(smsManager, phone, message, sentIntent)
-            Log.i("SMS", "✅ Sent via default SIM")
-            return true
-            
+            return false
         } catch (e: Exception) {
             Log.e("SMS", "Default SIM failed: ${e.message}")
             return false
+        }
+    }
+
+    private fun getSmsManagerForSub(context: Context, subId: Int): SmsManager? {
+        return try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val smsManager = context.getSystemService(SmsManager::class.java)
+                if (subId != -1) smsManager?.createForSubscriptionId(subId) else smsManager
+            } else {
+                @Suppress("DEPRECATION")
+                if (subId != -1 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+                    SmsManager.getSmsManagerForSubscriptionId(subId)
+                } else {
+                    SmsManager.getDefault()
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("SMS", "Failed to resolve SmsManager for subId $subId: ${e.message}")
+            null
         }
     }
     

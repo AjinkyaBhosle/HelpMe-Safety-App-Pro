@@ -110,14 +110,8 @@ const SosPage = ({ onSettingsClick, settings }) => {
 
             await nativePromise;
 
-            // 3. Save to panic history
-            savePanicEvent({
-                smsSent: true,
-                callMade: true,
-                contactNumber: emergencyContact,
-                location: locationStr, // Real data
-                battery: batteryStr    // Real data
-            });
+            // Panic history is now saved NATIVELY by AlertWorker to ensure it records
+            // even if the app UI is closed or killed during the background process.
 
             // Simple success feedback (updated)
             alert(`SOS INITIATED!\n\nCalling Primary: 1st Contact\nSMS Alerts: Sent to ${contactCount} contacts.`);

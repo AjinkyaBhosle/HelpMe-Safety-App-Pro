@@ -109,12 +109,12 @@ const InfoView = ({ onClose }) => (
           If alerts aren't sending or Voice SOS stops working after closing the app, ensure "Battery Optimization" is disabled.
         </p>
         <p className="text-xs text-yellow-500/90 font-medium">
-          <b>OnePlus, Oppo, Vivo, & Xiaomi Users:</b><br/>
-          Your phone's OS aggressively kills apps when you swipe them away. To ensure Voice SOS runs 24/7:<br/>
-          1. Open your "Recent Apps" menu (swipe up and hold).<br/>
-          2. Tap the 3 dots (or long-press) on the Help Me! app window.<br/>
-          3. Tap <b>Lock</b> (a padlock icon will appear).<br/>
-          This prevents the system from force-stopping the background safety listeners!
+          <b>Background Reliability:</b><br/>
+          To ensure Voice SOS runs 24/7, go to your phone's <b>Settings &rarr; Apps &rarr; Help Me! &rarr; Battery</b>, and select <b>Unrestricted</b> or turn on <b>Allow Background Activity</b>.
+        </p>
+        <p className="text-xs text-green-400/90 font-medium mt-3">
+          <b>💡 Quick Revival Tip:</b><br/>
+          If your phone's battery saver completely kills the Voice SOS listener after you swipe the app away, simply opening and closing the app once will instantaneously revive all background listeners!
         </p>
       </section>
     </div>
