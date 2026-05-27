@@ -124,7 +124,7 @@ const SettingsMenu = ({ isOpen, onClose, onNavigate, isPro, onUpgradeRequest }) 
         {
             icon: Info,
             label: 'About Us',
-            description: 'App information & how to use',
+            description: 'App information & credits',
             action: 'about',
             color: 'text-purple-400'
         }

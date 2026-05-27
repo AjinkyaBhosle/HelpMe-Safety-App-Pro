@@ -27,6 +27,14 @@ import org.vosk.android.SpeechService
 import org.vosk.android.StorageService
 import java.io.IOException
 
+enum class ListenerState {
+    STARTING,
+    ACTIVE,
+    STALLED,
+    RESTARTING,
+    FAILED
+}
+
 class WakeWordService : Service(), RecognitionListener {
 
     private var model: Model? = null
@@ -34,6 +42,16 @@ class WakeWordService : Service(), RecognitionListener {
     private val binder = LocalBinder()
     private val TAG = "WakeWordService"
     private var wakeLock: PowerManager.WakeLock? = null
+    
+    private var currentState = ListenerState.STARTING
+    private var lastAudioTime = 0L
+    private val watchdogHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val watchdogRunnable = object : Runnable {
+        override fun run() {
+            checkWatchdog()
+            watchdogHandler.postDelayed(this, 30_000)
+        }
+    }
     
     // We no longer constrain the grammar. Using the full vocabulary prevents Vosk from
     // force-matching similar words (like "hello") into "help me".
@@ -64,8 +82,9 @@ class WakeWordService : Service(), RecognitionListener {
         super.onCreate()
         Log.d(TAG, "WakeWordService Created")
         acquireWakeLock()
-        showNotification()
+        showNotification(ListenerState.STARTING, "Starting microphone...")
         initModel()
+        watchdogHandler.postDelayed(watchdogRunnable, 30_000)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -94,14 +113,21 @@ class WakeWordService : Service(), RecognitionListener {
             )
             
             val alarmManager = applicationContext.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
-            // Use set() instead of setExact() to prevent SecurityException on Android 12+ 
-            // when the user hasn't explicitly granted Alarms & Reminders permission
-            alarmManager.set(
-                android.app.AlarmManager.ELAPSED_REALTIME_WAKEUP,
-                android.os.SystemClock.elapsedRealtime() + 1000,
-                pendingIntent
-            )
-            Log.d(TAG, "AlarmManager set to revive WakeWordService via Broadcast")
+            // Use setExactAndAllowWhileIdle() for robust recovery when swiped away
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(
+                    android.app.AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                    android.os.SystemClock.elapsedRealtime() + 3000,
+                    pendingIntent
+                )
+            } else {
+                alarmManager.set(
+                    android.app.AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                    android.os.SystemClock.elapsedRealtime() + 3000,
+                    pendingIntent
+                )
+            }
+            Log.d(TAG, "AlarmManager set to revive WakeWordService robustly via Broadcast")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to set restart alarm", e)
         }
@@ -116,21 +142,22 @@ class WakeWordService : Service(), RecognitionListener {
                 PowerManager.PARTIAL_WAKE_LOCK,
                 "HelpMe::WakeWordLock"
             )
-            // Acquire with a 4-hour timeout to avoid indefinite locks.
-            // The service will re-acquire on restart if needed.
-            wakeLock?.acquire(4 * 60 * 60 * 1000L)
-            Log.d(TAG, "WakeLock acquired — CPU will stay active for audio listening")
+            // Acquire without timeout for indefinite permanent WakeLock
+            wakeLock?.acquire()
+            Log.d(TAG, "Permanent WakeLock acquired — CPU will stay active for audio listening")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to acquire WakeLock", e)
         }
     }
 
-    private fun showNotification() {
+    private fun showNotification(state: ListenerState, text: String) {
         val channelId = "helpme_voice_service"
         val channelName = "SOS Voice Detection"
         
+        currentState = state
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_LOW)
+            val channel = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_DEFAULT)
             channel.description = "Listening for the 'Help Me' wake word"
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(channel)
@@ -151,9 +178,9 @@ class WakeWordService : Service(), RecognitionListener {
 
         val notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle("Help Me! is Active")
-            .setContentText("Actively listening for voice SOS commands.")
+            .setContentText(text)
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(pendingIntent)
             .setDeleteIntent(deleteIntent)
             .setOngoing(true)
@@ -167,6 +194,16 @@ class WakeWordService : Service(), RecognitionListener {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start foreground service: ${e.message}")
+        }
+    }
+
+    private fun checkWatchdog() {
+        if (lastAudioTime == 0L) return // Not yet received any audio
+        val elapsed = System.currentTimeMillis() - lastAudioTime
+        if (elapsed > 60_000L) {
+            Log.w(TAG, "Watchdog detected silent audio freeze (no frames in ${elapsed}ms). Restarting recognizer!")
+            showNotification(ListenerState.STALLED, "Recognizer stalled — recovering...")
+            startListening()
         }
     }
 
@@ -234,6 +271,10 @@ class WakeWordService : Service(), RecognitionListener {
     }
 
     override fun onPartialResult(hypothesis: String) {
+        lastAudioTime = System.currentTimeMillis()
+        if (currentState != ListenerState.ACTIVE) {
+            showNotification(ListenerState.ACTIVE, "Listening active")
+        }
         val text = extractText(hypothesis)
         if (text.isEmpty() || text == "[unk]") return
         
@@ -242,6 +283,10 @@ class WakeWordService : Service(), RecognitionListener {
     }
 
     override fun onResult(hypothesis: String) {
+        lastAudioTime = System.currentTimeMillis()
+        if (currentState != ListenerState.ACTIVE) {
+            showNotification(ListenerState.ACTIVE, "Listening active")
+        }
         val text = extractText(hypothesis)
         if (text.isEmpty() || text == "[unk]") return
         
@@ -250,6 +295,10 @@ class WakeWordService : Service(), RecognitionListener {
     }
 
     override fun onFinalResult(hypothesis: String) {
+        lastAudioTime = System.currentTimeMillis()
+        if (currentState != ListenerState.ACTIVE) {
+            showNotification(ListenerState.ACTIVE, "Listening active")
+        }
         val text = extractText(hypothesis)
         if (text.isEmpty() || text == "[unk]") return
         
@@ -273,12 +322,11 @@ class WakeWordService : Service(), RecognitionListener {
 
         // ── Defense Layer 3: Audio Energy Gate (REMOVED) ──
 
-        // ── Defense Layer 4: Phrase Match ──
-        // Since we use full vocabulary, we check if the phrase is contained in the sentence.
-        // This allows "please help me" to trigger, while "hello" will fail.
+        // ── Defense Layer 4: Phrase Match (Fuzzy Matching) ──
         val cleaned = text.lowercase()
-        if (!cleaned.contains("help me")) {
-            Log.d(TAG, "Ignored (does not contain trigger: '$cleaned')")
+        val regex = Regex("h[e|a|o]?l?p\\s?m[e|i]|elp me")
+        if (!regex.containsMatchIn(cleaned) && !cleaned.contains("help me")) {
+            Log.d(TAG, "Ignored (no fuzzy trigger match: '$cleaned')")
             return
         }
 
@@ -329,6 +377,7 @@ class WakeWordService : Service(), RecognitionListener {
 
     override fun onDestroy() {
         super.onDestroy()
+        watchdogHandler.removeCallbacks(watchdogRunnable)
         try {
             speechService?.stop()
             speechService?.shutdown()
@@ -340,22 +389,38 @@ class WakeWordService : Service(), RecognitionListener {
         } catch (e: Exception) {}
         Log.d(TAG, "WakeWordService Destroyed")
         
-        // Final fallback: Restart directly from onDestroy if the service was killed
+        // Final fallback: Restart using reliable AlarmManager instead of direct startForegroundService (which crashes on Android 13+ background execution)
         try {
             val prefs = applicationContext.getSharedPreferences("helpme_prefs", Context.MODE_PRIVATE)
             val voiceSosEnabled = prefs.getBoolean("voice_sos_enabled", false)
             if (voiceSosEnabled) {
-                Log.d(TAG, "Service destroyed but Voice SOS is enabled. Restarting...")
-                val restartIntent = Intent(applicationContext, WakeWordService::class.java)
-                restartIntent.setPackage(packageName)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    applicationContext.startForegroundService(restartIntent)
+                Log.d(TAG, "Service destroyed but Voice SOS is enabled. Restarting via AlarmManager...")
+                val restartIntent = Intent(applicationContext, BootReceiver::class.java)
+                restartIntent.action = "com.helpme.app.RESTART_VOICE_SOS"
+                val pendingIntent = PendingIntent.getBroadcast(
+                    applicationContext,
+                    3,
+                    restartIntent,
+                    PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
+                )
+                
+                val alarmManager = applicationContext.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    alarmManager.setExactAndAllowWhileIdle(
+                        android.app.AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                        android.os.SystemClock.elapsedRealtime() + 3000,
+                        pendingIntent
+                    )
                 } else {
-                    applicationContext.startService(restartIntent)
+                    alarmManager.set(
+                        android.app.AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                        android.os.SystemClock.elapsedRealtime() + 3000,
+                        pendingIntent
+                    )
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to restart in onDestroy", e)
+            Log.e(TAG, "Failed to schedule restart in onDestroy", e)
         }
     }
 }

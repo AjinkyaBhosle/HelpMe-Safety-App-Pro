@@ -81,20 +81,19 @@ const AboutView = ({ onClose }) => (
 );
 
 const InfoView = ({ onClose }) => (
-  <div className="w-full max-w-md bg-surface p-6 rounded-2xl border border-zinc-800 shadow-xl animate-in fade-in zoom-in duration-300">
+  <div className="w-full max-w-md bg-surface p-6 rounded-2xl border border-zinc-800 shadow-xl animate-in fade-in zoom-in duration-300 max-h-[75vh] flex flex-col">
     <div className="flex justify-between items-center mb-6">
       <div className="flex items-center gap-2">
         <HelpCircle className="w-5 h-5 text-blue-400" />
-        <h2 className="text-xl font-bold">Info & Help</h2>
+        <h2 className="text-xl font-bold">How to Use</h2>
       </div>
       <button onClick={() => { hapticService.light(); onClose(); }} className="p-1 hover:bg-zinc-800 rounded-full">
         <X size={20} className="text-zinc-400" />
       </button>
     </div>
 
-    <div className="space-y-6 text-sm text-zinc-300">
+    <div className="overflow-y-auto space-y-6 text-sm text-zinc-300 pr-2 pb-4">
       <section>
-        <h3 className="font-semibold text-white mb-2">How to Use</h3>
         <ul className="list-disc pl-5 space-y-2 text-zinc-400 text-xs">
           <li><b>Setup:</b> Go to Settings and add up to 5 emergency contacts, separated by commas.</li>
           <li><b>Formatting:</b> Plain local digits (e.g., 5551234567) and full international codes (e.g., +15551234567) both work.</li>
@@ -106,15 +105,19 @@ const InfoView = ({ onClose }) => (
       <section>
         <h3 className="font-semibold text-white mb-2">Troubleshooting & Background Fixes</h3>
         <p className="text-xs text-zinc-500 mb-2">
-          If alerts aren't sending or Voice SOS stops working after closing the app, ensure "Battery Optimization" is disabled.
+          If alerts aren't sending or Voice SOS stops working after closing the app, ensure "Allow Background Activity" is enabled.
         </p>
         <p className="text-xs text-yellow-500/90 font-medium">
           <b>Background Reliability:</b><br/>
           To ensure Voice SOS runs 24/7, go to your phone's <b>Settings &rarr; Apps &rarr; Help Me! &rarr; Battery</b>, and select <b>Unrestricted</b> or turn on <b>Allow Background Activity</b>.
         </p>
         <p className="text-xs text-green-400/90 font-medium mt-3">
-          <b>💡 Quick Revival Tip:</b><br/>
-          If your phone's battery saver completely kills the Voice SOS listener after you swipe the app away, simply opening and closing the app once will instantaneously revive all background listeners!
+          💡 <b>Quick Revival Tip:</b><br/>
+          If your phone's battery saver completely kills the Voice SOS listener after you swipe the app away, simply opening and closing the app again will instantly restart the listener!
+        </p>
+        <p className="text-xs text-blue-400/90 font-medium mt-3">
+          <b>Device Note:</b><br/>
+          Because settings vary by device, if you can't find these exact names, check your main "App Info" screen to grant all requested permissions and ensure all background restrictions are lifted.
         </p>
       </section>
     </div>
@@ -201,6 +204,8 @@ function App() {
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [upgradeError, setUpgradeError] = useState("");
 
+  const [triggerGauntlet, setTriggerGauntlet] = useState(false);
+
   // Consolidated Initialization Logic
   useEffect(() => {
     const initApp = async () => {
@@ -246,8 +251,9 @@ function App() {
           ) {
             needsDisclosure = true;
           } else {
-            // Permissions granted, check GPS quietly
-            verifyLocationServices();
+            // Permissions granted, we need to run advanced checks, but AFTER init
+            // to prevent confirm() dialogs from getting stuck behind the Splash Screen.
+            setTriggerGauntlet(true);
           }
         } catch (e) {
           console.warn("Permission check failed:", e);
@@ -296,7 +302,21 @@ function App() {
     };
 
     initApp();
-  }, []);
+  }, []); // Run once on mount
+
+  // Run the gauntlet ONLY after initialization is complete and UI is visible
+  useEffect(() => {
+    if (!isInitializing && triggerGauntlet) {
+      setTriggerGauntlet(false); // ensure it only runs once
+      const runChecks = async () => {
+        // Wait 500ms to allow Splash Screen to fully fade out and Dashboard to render
+        await new Promise(r => setTimeout(r, 500));
+        await verifyLocationServices();
+        await runAdvancedPermissionGauntlet();
+      };
+      runChecks();
+    }
+  }, [isInitializing, triggerGauntlet]);
 
   useEffect(() => {
     const backButtonListener = CapApp.addListener('backButton', () => {
@@ -318,24 +338,159 @@ function App() {
     };
   }, [showSettingsMenu, showProModal, showDisclosure, view]);
 
+  const waitForAppResume = () => {
+    return new Promise(resolve => {
+      let listenerRef = null;
+      let hasGoneToBackground = false;
+      let isResolved = false;
+
+      const finish = () => {
+        if (!isResolved) {
+          isResolved = true;
+          if (listenerRef) listenerRef.remove();
+          resolve();
+        }
+      };
+
+      const setupListener = async () => {
+        listenerRef = await CapApp.addListener('appStateChange', ({ isActive }) => {
+          if (!isActive) {
+            hasGoneToBackground = true;
+          } else if (isActive && hasGoneToBackground) {
+            setTimeout(finish, 500);
+          }
+        });
+
+        // Fallback: If the app doesn't go to the background within 2 seconds 
+        // (e.g. settings failed to open), just continue so we don't hang forever.
+        setTimeout(() => {
+          if (!hasGoneToBackground) {
+            finish();
+          }
+        }, 2000);
+      };
+      setupListener();
+    });
+  };
+
   const verifyLocationServices = async () => {
     if (Capacitor.getPlatform() === 'android') {
       try {
         const locStatus = await SmsPlugin.isLocationServicesEnabled();
         if (!locStatus.enabled) {
-          const enableGps = confirm(
-            "🛰️ Location Services Disabled\n\n" +
-            "For the app to find you in an emergency, your phone's Location (GPS) must be turned ON.\n\n" +
-            "Tap OK to open Location Settings and enable it."
-          );
+          const enableGpsRes = await SmsPlugin.showConfirm({
+            title: "Location Services Disabled",
+            message: "For the app to find you in an emergency, your phone's Location (GPS) must be turned ON.\n\nTap OK to open Location Settings and enable it."
+          });
 
-          if (enableGps) {
+          if (enableGpsRes.value) {
             await SmsPlugin.openLocationSettings();
+            await waitForAppResume();
           }
         }
       } catch (gpsErr) {
         console.warn("Failed to check location services", gpsErr);
       }
+    }
+  };
+
+  const runAdvancedPermissionGauntlet = async () => {
+    if (Capacitor.getPlatform() !== 'android') return;
+
+    try {
+      const overlayStatus = await SmsPlugin.checkOverlayPermission();
+      if (!overlayStatus.granted) {
+        const overlayConfirmRes = await SmsPlugin.showConfirm({
+          title: "Background Call Permission Required",
+          message: "To ensure your phone automatically dials your emergency contact when locked, Android requires 'Display over other apps' permission.\n\nTap OK to open settings.\n\n⚠️ IMPORTANT: If you see a long list of apps, use the search icon at the top to find 'Help Me!' and toggle it ON."
+        });
+        if (overlayConfirmRes.value) {
+          await SmsPlugin.openOverlaySettings();
+          await waitForAppResume();
+        }
+      }
+    } catch (overlayErr) {
+      console.warn("Failed to check overlay permission", overlayErr);
+    }
+    
+    try {
+      const batStatus = await SmsPlugin.isIgnoringBatteryOptimizations();
+      if (!batStatus.granted) {
+        const batConfirmRes = await SmsPlugin.showConfirm({
+          title: "Allow Background Activity",
+          message: "To ensure 'Voice SOS' and 'Scheduled Check-in' work reliably 24/7, please click 'Allow' on the next prompt.\n\nIf you are taken to the App Info screen instead, tap on 'Battery usage' and select 'Allow background activity' or 'Unrestricted'."
+        });
+        if (batConfirmRes.value) {
+          await SmsPlugin.openBatteryOptimizationSettings();
+          await waitForAppResume();
+        }
+      }
+    } catch (batErr) {
+      console.warn("Failed to check battery optimization", batErr);
+    }
+    
+    try {
+      const alarmStatus = await SmsPlugin.canScheduleExactAlarms();
+      if (!alarmStatus.granted) {
+        const alarmConfirmRes = await SmsPlugin.showConfirm({
+          title: "Alarms & Reminders",
+          message: "To allow Help Me! to automatically restart the Voice SOS listener if Android stops it, please enable 'Alarms & reminders' for the app in the next screen."
+        });
+        if (alarmConfirmRes.value) {
+          await SmsPlugin.openExactAlarmSettings();
+          await waitForAppResume();
+        }
+      }
+    } catch (alarmErr) {
+      console.warn("Failed to check exact alarm permission", alarmErr);
+    }
+
+    try {
+      const hibernateStatus = await SmsPlugin.isAppHibernationWhitelisted();
+      if (!hibernateStatus.granted) {
+        const hibernateConfirmRes = await SmsPlugin.showConfirm({
+          title: "Manage App if Unused",
+          message: "To prevent Android from silently revoking your safety permissions, please turn OFF 'Manage app if unused' in the next screen."
+        });
+        if (hibernateConfirmRes.value) {
+          await SmsPlugin.openAppInfoSettings();
+          await waitForAppResume();
+        }
+      }
+    } catch (hibernateErr) {
+      console.warn("Failed to check app hibernation status", hibernateErr);
+    }
+
+    try {
+      const notificationStatus = await SmsPlugin.areNotificationsEnabled();
+      if (!notificationStatus.granted) {
+        const notifConfirmRes = await SmsPlugin.showConfirm({
+          title: "Manage Notifications",
+          message: "To ensure you receive critical safety alerts and status updates, please enable Notifications for 'Help Me!' in the next screen."
+        });
+        if (notifConfirmRes.value) {
+          await SmsPlugin.openNotificationSettings();
+          await waitForAppResume();
+        }
+      }
+    } catch (notifErr) {
+      console.warn("Failed to check notification status", notifErr);
+    }
+
+    try {
+      const dndStatus = await SmsPlugin.canBypassDnd();
+      if (!dndStatus.granted) {
+        const dndConfirmRes = await SmsPlugin.showConfirm({
+          title: "Do Not Disturb",
+          message: "To ensure Voice SOS and alarms still sound even if your phone is in Do Not Disturb mode, please toggle 'Allow in Do Not Disturb' in the next screen."
+        });
+        if (dndConfirmRes.value) {
+          await SmsPlugin.openNotificationSettings();
+          await waitForAppResume();
+        }
+      }
+    } catch (dndErr) {
+      console.warn("Failed to check DND bypass status", dndErr);
     }
   };
 
@@ -346,65 +501,28 @@ function App() {
 
       if (Capacitor.getPlatform() === 'android') {
         try {
-          const bgConfirm = confirm(
-            "📍 Additional Permission Required\n\n" +
-            "To enable features like 'Scheduled Check-in' to work when the app is closed, " +
-            "you must select 'Allow all the time' for location in the next screen."
-          );
+          const bgConfirmRes = await SmsPlugin.showConfirm({
+            title: "Additional Permission Required",
+            message: "To enable features like 'Scheduled Check-in' to work when the app is closed, you must select 'Allow all the time' for location in the next screen."
+          });
 
-          if (bgConfirm) {
+          if (bgConfirmRes.value) {
             await SmsPlugin.requestPermissions({ permissions: ['background_location'] });
           }
         } catch (bgErr) {
           console.warn("Background location request failed", bgErr);
         }
         await verifyLocationServices();
-
-        try {
-          const overlayStatus = await SmsPlugin.checkOverlayPermission();
-          if (!overlayStatus.granted) {
-            const overlayConfirm = confirm(
-              "📲 Background Call Permission Required\n\n" +
-              "To ensure your phone automatically dials your emergency contact when locked, Android requires 'Display over other apps' permission.\n\n" +
-              "Tap OK to open settings.\n\n" +
-              "⚠️ IMPORTANT: If you see a long list of apps, use the search icon at the top to find 'Help Me!' and toggle it ON."
-            );
-            if (overlayConfirm) {
-              await SmsPlugin.openOverlaySettings();
-            }
-          }
-        } catch (overlayErr) {
-          console.warn("Failed to check overlay permission", overlayErr);
-        }
-        
-        try {
-          const batStatus = await SmsPlugin.isIgnoringBatteryOptimizations();
-          if (!batStatus.granted) {
-            const batConfirm = confirm(
-              "🔋 Battery Optimization\n\n" +
-              "To ensure 'Voice SOS' and 'Scheduled Check-in' work reliably in the background, please disable battery optimization for 'Help Me!' in the next screen."
-            );
-            if (batConfirm) {
-              await SmsPlugin.openBatteryOptimizationSettings();
-            }
-          }
-        } catch (batErr) {
-          console.warn("Failed to check battery optimization", batErr);
-        }
+        await runAdvancedPermissionGauntlet();
       }
     } catch (e) {
       console.error("Failed to request permissions", e);
       if (e.message && e.message.includes("SMS")) {
-        const userChoice = confirm(
-          "⚠️ SMS Permission Blocked\n\n" +
-          "Android has blocked automatic SMS permission for sideloaded apps as a security measure.\n\n" +
-          "To enable SMS alerts:\n" +
-          "1. Tap 'OK' to open App Settings\n" +
-          "2. Go to 'Permissions\n" +
-          "3. Enable 'SMS' permission manually\n\n" +
-          "This is required for emergency alerts to work."
-        );
-        if (userChoice) {
+        const userChoiceRes = await SmsPlugin.showConfirm({
+          title: "Restricted Permission Blocked",
+          message: "Android has blocked SMS/Call permission for sideloaded apps as a security measure.\n\nTo fix this:\n1. Tap 'OK' to open App Info\n2. Tap the 3 dots (top right) and select 'Allow restricted settings'\n3. Go to 'Permissions' and manually allow SMS & Call\n\nThis is required for the SOS function to work."
+        });
+        if (userChoiceRes.value) {
           try {
             await SmsPlugin.openAppSettings();
           } catch (settingsErr) {
@@ -549,7 +667,7 @@ function App() {
 
   return (
     <div 
-      className="min-h-screen bg-black flex flex-col items-center relative overflow-hidden text-white font-sans"
+      className="h-[100dvh] w-full bg-black flex flex-col items-center relative overflow-hidden text-white font-sans"
       style={{
         paddingTop: 'env(safe-area-inset-top)',
         paddingBottom: 'env(safe-area-inset-bottom)',

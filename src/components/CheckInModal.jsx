@@ -51,18 +51,26 @@ const CheckInModal = ({ isOpen, onClose }) => {
             // 1. Check Permissions
             const permStatus = await SmsPlugin.checkPermissions();
 
+            if (permStatus.sms !== 'granted' || permStatus.call !== 'granted') {
+                const proceedRes = await SmsPlugin.showConfirm({
+                    title: "Missing Basic Permissions",
+                    message: "You haven't granted SMS and Phone Call permissions.\n\nCheck-ins won't be able to alert your contacts if you miss a check-in. Continue anyway?"
+                });
+                if (!proceedRes.value) {
+                    setLoading(false);
+                    return;
+                }
+            }
+
             // Check specifically for background location
             if (permStatus.background_location !== 'granted') {
-                const proceed = confirm(
-                    "⚠️ IMPORTANT ⚠️\n\n" +
-                    "To ensure we can send your location even if the app is closed, " +
-                    "you MUST select 'Allow all the time' in the next screen.\n\n" +
-                    "Tap OK to open Settings/Permissions."
-                );
+                const proceedRes = await SmsPlugin.showConfirm({
+                    title: "IMPORTANT",
+                    message: "To ensure we can send your location even if the app is closed, you MUST select 'Allow all the time' in the next screen.\n\nTap OK to open Settings/Permissions."
+                });
 
-                if (proceed) {
+                if (proceedRes.value) {
                     await SmsPlugin.requestPermissions({ permissions: ['background_location'] });
-                    // Re-check
                     const newStatus = await SmsPlugin.checkPermissions();
                     if (newStatus.background_location !== 'granted') {
                         throw new Error("Background location ('Allow all the time') is required for safety check-ins.");

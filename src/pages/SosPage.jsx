@@ -125,7 +125,7 @@ const SosPage = ({ onSettingsClick, settings }) => {
     };
 
     return (
-        <div className="min-h-screen bg-black text-white flex flex-col relative overflow-hidden font-sans selection:bg-green-500/30">
+        <div className="h-full w-full bg-black text-white flex flex-col relative overflow-hidden font-sans selection:bg-green-500/30">
 
             {/* Dynamic Background Glow */}
             <div className={`absolute top-0 left-0 w-full h-full pointer-events-none transition-colors duration-700

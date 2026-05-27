@@ -107,17 +107,33 @@ const PermissionDisclosureModal = ({ isOpen, onAccept }) => {
                                 <Battery className="w-4 h-4 text-yellow-400" />
                             </div>
                             <div>
-                                <h3 className="text-white font-medium text-sm">Battery Optimization</h3>
-                                <p className="text-zinc-500 text-xs mt-1">
-                                    Disabling battery optimization ensures Voice SOS and Safety Timer continue working reliably in the background.
+                                <h3 className="text-white font-medium text-sm">Background Reliability Settings</h3>
+                                <p className="text-zinc-500 text-xs mt-1 mb-3">
+                                    To ensure Voice SOS and Safety Timer stay active 24/7 without Android silently killing them, you must configure four critical settings in your phone's App Info:
                                 </p>
-                                <div className="mt-3 bg-red-900/20 border border-red-500/30 rounded p-3">
-                                    <h4 className="text-red-400 font-semibold text-xs mb-1">🚨 Critical for Background Reliability:</h4>
-                                    <ol className="text-red-200 text-[11px] list-decimal ml-3 space-y-1">
-                                        <li>Open your phone's <b>Settings</b> app.</li>
-                                        <li>Go to <b>Apps &rarr; App Management &rarr; HelpMe</b> (or <b>Battery &rarr; App Battery Management</b>).</li>
-                                        <li>Turn ON <b>"Allow Background Activity"</b> or set to <b>"Unrestricted"</b>.</li>
-                                    </ol>
+                                
+                                <div className="bg-amber-950/20 border border-amber-900/40 rounded-xl overflow-hidden text-[11px] mb-2">
+                                    <div className="p-3 border-b border-amber-900/20">
+                                        <p className="font-semibold text-amber-400 mb-1 flex items-center gap-1.5"><span className="text-amber-500">①</span> Battery</p>
+                                        <p className="text-zinc-300 ml-5">Must be set to <b>"Allow background activity"</b> or "Unrestricted".</p>
+                                    </div>
+                                    <div className="p-3 border-b border-amber-900/20">
+                                        <p className="font-semibold text-amber-400 mb-1 flex items-center gap-1.5"><span className="text-amber-500">②</span> Alarms & Reminders</p>
+                                        <p className="text-zinc-300 ml-5">Must be <b>Allowed</b> (enables the app to auto-restart if Android stops it).</p>
+                                    </div>
+                                    <div className="p-3 border-b border-amber-900/20">
+                                        <p className="font-semibold text-amber-400 mb-1 flex items-center gap-1.5"><span className="text-amber-500">③</span> App Unused</p>
+                                        <p className="text-zinc-300 ml-5">Turn OFF <b>"Manage app if unused"</b> to prevent permissions from being revoked.</p>
+                                    </div>
+                                    <div className="p-3">
+                                        <p className="font-semibold text-amber-400 mb-1 flex items-center gap-1.5"><span className="text-amber-500">④</span> Do Not Disturb</p>
+                                        <p className="text-zinc-300 ml-5"><b>Allow</b> (ensures the foreground service and alerts are never suppressed).</p>
+                                    </div>
+                                </div>
+                                <div className="mt-2 p-2.5 bg-blue-900/20 border border-blue-800/40 rounded-lg">
+                                    <p className="text-[11px] text-blue-300 leading-relaxed">
+                                        <b>Device Note:</b> Because settings vary by device, if you don't see exact matches for these options, look around your main "App Info" screen to grant all requested permissions and ensure no background limits are applied.
+                                    </p>
                                 </div>
                             </div>
                         </div>

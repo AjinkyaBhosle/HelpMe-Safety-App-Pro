@@ -116,13 +116,11 @@ class SmsPlugin : Plugin() {
 
         try {
             if (isAggressiveOEM) {
-                // Open App Info for aggressive OEMs so they can enable Auto-Launch and Background Activity
                 val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
                 intent.data = Uri.parse("package:" + context.packageName)
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(intent)
             } else {
-                // Standard Android one-tap dialog
                 val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
                 intent.data = Uri.parse("package:" + context.packageName)
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -130,7 +128,6 @@ class SmsPlugin : Plugin() {
             }
             call.resolve()
         } catch (e: Exception) {
-            // Fallback to App Info if anything fails
             try {
                 val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
                 intent.data = Uri.parse("package:" + context.packageName)
@@ -140,6 +137,123 @@ class SmsPlugin : Plugin() {
             } catch (e2: Exception) {
                 call.reject("Could not open settings: " + e2.message)
             }
+        }
+    }
+
+    @PluginMethod
+    fun areNotificationsEnabled(call: PluginCall) {
+        try {
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            call.resolve(JSObject().put("granted", notificationManager.areNotificationsEnabled()))
+        } catch (e: Exception) {
+            call.resolve(JSObject().put("granted", false))
+        }
+    }
+
+    @PluginMethod
+    fun openNotificationSettings(call: PluginCall) {
+        try {
+            val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+            intent.putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+            call.resolve()
+        } catch (e: Exception) {
+            try {
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                intent.data = Uri.parse("package:" + context.packageName)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
+                call.resolve()
+            } catch (e2: Exception) {
+                call.reject("Could not open settings: " + e2.message)
+            }
+        }
+    }
+
+    @PluginMethod
+    fun canBypassDnd(call: PluginCall) {
+        try {
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channels = notificationManager.notificationChannels
+                if (channels.isEmpty()) {
+                    call.resolve(JSObject().put("granted", false))
+                    return
+                }
+                var bypasses = false
+                for (channel in channels) {
+                    if (channel.canBypassDnd()) {
+                        bypasses = true
+                        break
+                    }
+                }
+                call.resolve(JSObject().put("granted", bypasses))
+            } else {
+                call.resolve(JSObject().put("granted", true))
+            }
+        } catch (e: Exception) {
+            call.resolve(JSObject().put("granted", false))
+        }
+    }
+
+    @PluginMethod
+    fun canScheduleExactAlarms(call: PluginCall) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+                call.resolve(JSObject().put("granted", alarmManager.canScheduleExactAlarms()))
+            } else {
+                call.resolve(JSObject().put("granted", true))
+            }
+        } catch (e: Exception) {
+            call.resolve(JSObject().put("granted", false))
+        }
+    }
+
+    @PluginMethod
+    fun openExactAlarmSettings(call: PluginCall) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            try {
+                val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                intent.data = Uri.parse("package:" + context.packageName)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
+                call.resolve()
+            } catch (e: Exception) {
+                call.reject("Could not open settings: " + e.message)
+            }
+        } else {
+            call.resolve()
+        }
+    }
+
+    @PluginMethod
+    fun isAppHibernationWhitelisted(call: PluginCall) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                val pm = context.packageManager
+                val isWhitelisted = pm.isAutoRevokeWhitelisted(context.packageName)
+                call.resolve(JSObject().put("granted", isWhitelisted))
+            } catch (e: Exception) {
+                // If it fails on aggressive OEMs, assume false so they are forced to manually check
+                call.resolve(JSObject().put("granted", false))
+            }
+        } else {
+            call.resolve(JSObject().put("granted", true))
+        }
+    }
+
+    @PluginMethod
+    fun openAppInfoSettings(call: PluginCall) {
+        try {
+            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+            intent.data = Uri.parse("package:" + context.packageName)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+            call.resolve()
+        } catch (e: Exception) {
+            call.reject("Could not open settings: " + e.message)
         }
     }
 
@@ -159,12 +273,16 @@ class SmsPlugin : Plugin() {
 
     @PluginMethod
     fun checkOverlayPermission(call: PluginCall) {
-        val hasPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            Settings.canDrawOverlays(context)
-        } else {
-            true
+        try {
+            val hasPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                Settings.canDrawOverlays(context)
+            } else {
+                true
+            }
+            call.resolve(JSObject().put("granted", hasPermission))
+        } catch (e: Exception) {
+            call.resolve(JSObject().put("granted", false))
         }
-        call.resolve(JSObject().put("granted", hasPermission))
     }
 
     @PluginMethod
@@ -205,7 +323,35 @@ class SmsPlugin : Plugin() {
             context.startActivity(intent)
             call.resolve()
         } catch (e: Exception) {
-            call.reject("Could not open app settings: " + e.message)
+            call.reject("Could not open app settings", e)
+        }
+    }
+
+    @PluginMethod
+    fun showConfirm(call: PluginCall) {
+        val title = call.getString("title", "Permission Required")
+        val message = call.getString("message", "")
+        val okButton = call.getString("okButton", "OK")
+        val cancelButton = call.getString("cancelButton", "Cancel")
+
+        activity.runOnUiThread {
+            android.app.AlertDialog.Builder(activity)
+                .setTitle(title)
+                .setMessage(message)
+                .setCancelable(false)
+                .setPositiveButton(okButton) { dialog, _ ->
+                    val ret = JSObject()
+                    ret.put("value", true)
+                    call.resolve(ret)
+                    dialog.dismiss()
+                }
+                .setNegativeButton(cancelButton) { dialog, _ ->
+                    val ret = JSObject()
+                    ret.put("value", false)
+                    call.resolve(ret)
+                    dialog.dismiss()
+                }
+                .show()
         }
     }
 
