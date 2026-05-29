@@ -53,23 +53,6 @@ const SettingsMenu = ({ isOpen, onClose, onNavigate, isPro, onUpgradeRequest }) 
             color: 'text-purple-400'
         },
         {
-            icon: History,
-            label: 'Panic History',
-            description: 'View past emergency alerts',
-            action: 'history',
-            color: 'text-green-400'
-        }
-    ];
-
-    const proItems = [
-        {
-            icon: HumanHeadSpeaking,
-            label: 'Voice SOS',
-            description: 'Say "Help Me" to trigger SOS even offline',
-            action: 'voice',
-            color: isVoiceActive ? 'text-green-500' : 'text-zinc-400'
-        },
-        {
             icon: Flashlight,
             label: isStrobing ? 'Stop SOS Flash' : 'SOS Flashlight',
             description: 'Toggle emergency strobe light',
@@ -85,10 +68,27 @@ const SettingsMenu = ({ isOpen, onClose, onNavigate, isPro, onUpgradeRequest }) 
         },
         {
             icon: Mic,
-            label: 'Voice Recorder',
+            label: 'Record & Share Audio',
             description: 'Record audio & conversations',
             action: 'recorder',
             color: 'text-red-400'
+        },
+        {
+            icon: History,
+            label: 'Panic History',
+            description: 'View past emergency alerts',
+            action: 'history',
+            color: 'text-green-400'
+        }
+    ];
+
+    const proItems = [
+        {
+            icon: HumanHeadSpeaking,
+            label: 'Voice SOS',
+            description: 'Say "Help Me" to trigger SOS even offline',
+            action: 'voice',
+            color: isVoiceActive ? 'text-green-500' : 'text-zinc-400'
         },
         {
             icon: Video,
@@ -131,7 +131,7 @@ const SettingsMenu = ({ isOpen, onClose, onNavigate, isPro, onUpgradeRequest }) 
     ];
 
     const handleItemClick = async (action) => {
-        const proActions = ['voice', 'flashlight', 'siren', 'recorder', 'safety-cam', 'checkin'];
+        const proActions = ['voice', 'safety-cam', 'checkin'];
         if (proActions.includes(action) && !isPro) {
             hapticService.light();
             onUpgradeRequest(action);
@@ -213,7 +213,7 @@ const SettingsMenu = ({ isOpen, onClose, onNavigate, isPro, onUpgradeRequest }) 
                                 
                                 {/* Free Features */}
                                 <div>
-                                    <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider px-4 py-2">Basic Features</h4>
+                                    <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider px-4 py-2">Basic Features (Free)</h4>
                                     {freeItems.map((item, index) => {
                                         const Icon = item.icon;
                                         return (
@@ -242,7 +242,7 @@ const SettingsMenu = ({ isOpen, onClose, onNavigate, isPro, onUpgradeRequest }) 
                                 <div className="border-t border-zinc-800/50 pt-2">
                                     <div className="flex items-center justify-between px-4 py-2">
                                         <h4 className="text-xs font-semibold text-yellow-500 uppercase tracking-wider flex items-center gap-1">
-                                            <Sparkles size={12} /> Pro Features
+                                            <Sparkles size={12} /> Pro Features (Paid)
                                         </h4>
                                         {!isPro && <span className="text-[10px] bg-yellow-500/10 text-yellow-500 px-2 py-0.5 rounded-full font-semibold">PAID</span>}
                                     </div>

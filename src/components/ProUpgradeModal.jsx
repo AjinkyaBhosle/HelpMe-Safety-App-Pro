@@ -38,9 +38,6 @@ const ProUpgradeModal = ({ isOpen, onClose, onUpgrade, onRestore, isUpgrading, e
                         <FeatureRow icon="🗣️" title="Voice SOS" desc="Hands-free trigger by saying 'Help Me'" />
                         <FeatureRow icon="📸" title="Safety Cam" desc="Record videos with GPS overlays" />
                         <FeatureRow icon="⏰" title="Scheduled Check-in" desc="Dead-man's switch for safety" />
-                        <FeatureRow icon="🎙️" title="Voice Recorder" desc="Discreet offline audio recording" />
-                        <FeatureRow icon="🚨" title="Safety Sounds" desc="Loud sirens and alarms" />
-                        <FeatureRow icon="🔦" title="SOS Flashlight" desc="Visual strobe during panic" />
                     </div>
 
                     {error && (

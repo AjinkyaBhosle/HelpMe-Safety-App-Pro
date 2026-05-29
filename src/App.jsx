@@ -447,12 +447,14 @@ function App() {
 
     try {
       const hibernateStatus = await SmsPlugin.isAppHibernationWhitelisted();
-      if (!hibernateStatus.granted) {
+      const hasPromptedHiber = localStorage.getItem('prompted_hibernation');
+      if (!hibernateStatus.granted && !hasPromptedHiber) {
         const hibernateConfirmRes = await SmsPlugin.showConfirm({
           title: "Manage App if Unused",
           message: "To prevent Android from silently revoking your safety permissions, please turn OFF 'Manage app if unused' in the next screen."
         });
         if (hibernateConfirmRes.value) {
+          localStorage.setItem('prompted_hibernation', 'true');
           await SmsPlugin.openAppInfoSettings();
           await waitForAppResume();
         }
@@ -479,12 +481,14 @@ function App() {
 
     try {
       const dndStatus = await SmsPlugin.canBypassDnd();
-      if (!dndStatus.granted) {
+      const hasPromptedDnd = localStorage.getItem('prompted_dnd');
+      if (!dndStatus.granted && !hasPromptedDnd) {
         const dndConfirmRes = await SmsPlugin.showConfirm({
           title: "Do Not Disturb",
           message: "To ensure Voice SOS and alarms still sound even if your phone is in Do Not Disturb mode, please toggle 'Allow in Do Not Disturb' in the next screen."
         });
         if (dndConfirmRes.value) {
+          localStorage.setItem('prompted_dnd', 'true');
           await SmsPlugin.openNotificationSettings();
           await waitForAppResume();
         }

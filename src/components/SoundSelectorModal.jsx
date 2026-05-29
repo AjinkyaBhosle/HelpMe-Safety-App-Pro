@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, X, Siren, Bell, Mic, Dog } from 'lucide-react';
+import { Settings, X, Siren, Bell, Mic, Dog, Skull, Car } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { sirenService } from '../services/SirenService';
 import { hapticService } from '../services/HapticService';
@@ -74,6 +74,22 @@ const soundOptions = [
         color: 'text-yellow-500',
         bg: 'bg-yellow-500/10',
         activeBg: 'bg-yellow-500/30'
+    },
+    {
+        id: 'carhorn',
+        label: 'Car Horn',
+        icon: Car,
+        color: 'text-indigo-500',
+        bg: 'bg-indigo-500/10',
+        activeBg: 'bg-indigo-500/30'
+    },
+    {
+        id: 'scream',
+        label: 'Scream',
+        icon: Skull,
+        color: 'text-purple-500',
+        bg: 'bg-purple-500/10',
+        activeBg: 'bg-purple-500/30'
     }
 ];
 
@@ -107,7 +123,7 @@ const SoundSelectorModal = ({ isOpen, onClose }) => {
     };
 
     return (
-        <div className="w-full max-w-sm bg-zinc-900 rounded-2xl border border-zinc-800 shadow-2xl p-6 animate-in fade-in zoom-in duration-300">
+        <div className="w-full max-w-sm bg-zinc-900 rounded-2xl border border-zinc-800 shadow-2xl p-6 animate-in fade-in zoom-in duration-300 max-h-[85vh] flex flex-col">
             <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold text-white">Safety Sounds</h3>
                 <button
@@ -118,7 +134,7 @@ const SoundSelectorModal = ({ isOpen, onClose }) => {
                 </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 overflow-y-auto pr-2 pb-2 scrollbar-thin scrollbar-thumb-zinc-700">
                 {soundOptions.map((sound) => {
                     const Icon = sound.icon;
                     const isActive = activeSound === sound.id;
@@ -144,7 +160,7 @@ const SoundSelectorModal = ({ isOpen, onClose }) => {
             </div>
 
             <p className="text-xs text-center text-zinc-500 mt-6">
-                Tap to play/stop. Audio stops when closing this window.
+                Tap to play/stop. Audio continues playing even in the background.
             </p>
         </div>
     );

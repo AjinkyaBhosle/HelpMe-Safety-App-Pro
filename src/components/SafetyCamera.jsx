@@ -35,34 +35,23 @@ const SafetyCamera = ({ onClose }) => {
             console.log(`[SafetyCam] Launching ${type} camera...`);
             let result;
 
+            const latStr = locationData.lat ? locationData.lat.toFixed(5) : 'Unknown';
+            const lngStr = locationData.lng ? locationData.lng.toFixed(5) : 'Unknown';
+            const mapLink = generateMapsLink(locationData.lat, locationData.lng);
+            
+            const watermarkText = `Location: ${mapLink}\nTime: ${new Date().toLocaleString()}`;
+
             if (type === 'video') {
-                result = await SafetyCameraPlugin.captureVideo();
+                result = await SafetyCameraPlugin.captureVideo({ watermark: watermarkText });
             } else {
-                result = await SafetyCameraPlugin.capturePhoto();
+                result = await SafetyCameraPlugin.capturePhoto({ watermark: watermarkText });
             }
 
             console.log('[SafetyCam] Camera returned:', result);
 
             if (result.success && result.filePath) {
-                // Try to get GPS, but don't fail if it times out
                 const isVideo = result.type === 'video' || type === 'video';
-                const emoji = isVideo ? '🚨' : '📸';
                 const actionText = isVideo ? 'Safety Video Recorded' : 'Safety Photo Captured';
-
-                let shareText = `${emoji} ${actionText}\n`;
-
-                try {
-                    console.log('[SafetyCam] Fetching GPS...');
-                    const currentGPS = await getFormattedLocation();
-                    console.log('[SafetyCam] GPS success:', currentGPS);
-                    const mapLink = generateMapsLink(currentGPS.lat, currentGPS.lng);
-                    shareText += `📍 Location: ${mapLink}\n📌 ${currentGPS.text}\n`;
-                } catch (gpsError) {
-                    console.error('[SafetyCam] GPS failed:', gpsError);
-                    shareText += '📍 Location: Unavailable\n';
-                }
-
-                shareText += `🕒 ${new Date().toLocaleString()}`;
 
                 // Convert absolute path to file:// URI
                 const fileUri = `file://${result.filePath}`;
@@ -74,19 +63,17 @@ const SafetyCamera = ({ onClose }) => {
                     console.error('[SafetyCam] Metadata save failed:', metaErr);
                 }
 
-                console.log('[SafetyCam] About to share:', { fileUri, shareText });
+                console.log('[SafetyCam] About to share:', { fileUri });
 
-                // Share
+                // Share (No text payload sent so there's no editable caption)
                 try {
                     await Share.share({
                         title: actionText,
-                        text: shareText,
                         url: fileUri,
                         dialogTitle: `Share ${isVideo ? 'Video' : 'Photo'}`
                     });
                 } catch (shareError) {
                     console.error('[SafetyCam] Share failed:', shareError);
-                    // alert('Share failed: ' + shareError.message); // Optional
                 }
             }
         } catch (error) {
@@ -141,7 +128,7 @@ const SafetyCamera = ({ onClose }) => {
                         `}
                     >
                         <Video className="w-6 h-6" />
-                        {loadingType === 'video' ? 'Opening...' : 'Record Video'}
+                        {loadingType === 'video' ? 'Processing...' : 'Record Video'}
                     </button>
 
                     {/* Take Photo - Blue */}
@@ -155,17 +142,17 @@ const SafetyCamera = ({ onClose }) => {
                         `}
                     >
                         <Camera className="w-6 h-6" />
-                        {loadingType === 'photo' ? 'Opening...' : 'Take Photo'}
+                        {loadingType === 'photo' ? 'Processing...' : 'Take Photo'}
                     </button>
                 </div>
 
                 {/* Info Text */}
                 <div className="text-center max-w-sm space-y-2">
                     <p className="text-zinc-300 text-sm font-medium">
-                        📹 Uses your phone's native camera app
+                        📹 Location & Time are burned into media
                     </p>
-                    <p className="text-zinc-500 text-xs">
-                        GPS location will be included in the share message after recording
+                    <p className="text-zinc-500 text-xs leading-relaxed px-4">
+                        Permanently watermarked on photo/video files while sharing to prevent tampering
                     </p>
                 </div>
 

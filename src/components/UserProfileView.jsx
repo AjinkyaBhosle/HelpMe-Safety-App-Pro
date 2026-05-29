@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Save, X, Home, Briefcase, HeartPulse, FileText, Droplet } from 'lucide-react';
+import { User, Save, X, Home, Briefcase, HeartPulse, FileText, Droplet, Calendar, Phone, Ruler, Scale, Pill } from 'lucide-react';
 import { hapticService } from '../services/HapticService';
 
 export default function UserProfileView({ onClose }) {
@@ -7,9 +7,14 @@ export default function UserProfileView({ onClose }) {
     const [formData, setFormData] = useState({
         userName: '',
         bloodGroup: '',
+        dob: '',
+        primaryContact: '',
+        height: '',
+        weight: '',
         residentialAddress: '',
         workplaceAddress: '',
         allergies: '',
+        medications: '',
         medicalHistory: ''
     });
 
@@ -95,6 +100,18 @@ export default function UserProfileView({ onClose }) {
                     </div>
                     <div className="space-y-2">
                         <label className="text-xs text-zinc-400 flex items-center gap-1">
+                            <Calendar size={12} /> Date of Birth
+                        </label>
+                        <input
+                            type="date"
+                            name="dob"
+                            value={formData.dob}
+                            onChange={handleChange}
+                            className="w-full bg-void border border-zinc-700 rounded-lg p-3 text-sm text-white focus:border-blue-500 outline-none"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs text-zinc-400 flex items-center gap-1">
                             <Droplet size={12} /> Blood Group
                         </label>
                         <input
@@ -104,6 +121,45 @@ export default function UserProfileView({ onClose }) {
                             onChange={handleChange}
                             className="w-full bg-void border border-zinc-700 rounded-lg p-3 text-sm text-white focus:border-red-500 outline-none"
                             placeholder="O+"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs text-zinc-400 flex items-center gap-1">
+                            <Phone size={12} /> Primary Contact
+                        </label>
+                        <input
+                            type="tel"
+                            name="primaryContact"
+                            value={formData.primaryContact}
+                            onChange={handleChange}
+                            className="w-full bg-void border border-zinc-700 rounded-lg p-3 text-sm text-white focus:border-blue-500 outline-none"
+                            placeholder="Emergency Number"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs text-zinc-400 flex items-center gap-1">
+                            <Ruler size={12} /> Height (cm)
+                        </label>
+                        <input
+                            type="text"
+                            name="height"
+                            value={formData.height}
+                            onChange={handleChange}
+                            className="w-full bg-void border border-zinc-700 rounded-lg p-3 text-sm text-white focus:border-green-500 outline-none"
+                            placeholder="175"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs text-zinc-400 flex items-center gap-1">
+                            <Scale size={12} /> Weight (kg)
+                        </label>
+                        <input
+                            type="text"
+                            name="weight"
+                            value={formData.weight}
+                            onChange={handleChange}
+                            className="w-full bg-void border border-zinc-700 rounded-lg p-3 text-sm text-white focus:border-green-500 outline-none"
+                            placeholder="70"
                         />
                     </div>
                 </div>
@@ -147,6 +203,19 @@ export default function UserProfileView({ onClose }) {
                         onChange={handleChange}
                         className="w-full bg-void border border-zinc-700 rounded-lg p-3 text-sm text-white focus:border-yellow-500 outline-none"
                         placeholder="Peanuts, Penicillin..."
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <label className="text-xs text-zinc-400 flex items-center gap-1">
+                        <Pill size={12} /> Current Medications
+                    </label>
+                    <textarea
+                        name="medications"
+                        value={formData.medications}
+                        onChange={handleChange}
+                        className="w-full bg-void border border-zinc-700 rounded-lg p-3 text-sm text-white focus:border-pink-500 outline-none resize-none h-16"
+                        placeholder="List medications..."
                     />
                 </div>
 

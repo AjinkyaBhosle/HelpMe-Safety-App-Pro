@@ -213,7 +213,7 @@ const VoiceRecorderModal = ({ isOpen, onClose }) => {
             {/* Header */}
             <div className="flex justify-between items-center p-4 border-b border-zinc-800">
                 <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                    <Mic className="text-red-500" /> Voice Recorder
+                    <Mic className="text-red-500" /> Record & Share Audio
                 </h3>
                 <button onClick={() => { hapticService.light(); onClose(); }} className="p-2 hover:bg-zinc-800 rounded-full text-zinc-400">
                     <X size={20} />
@@ -222,6 +222,9 @@ const VoiceRecorderModal = ({ isOpen, onClose }) => {
 
             {/* Recorder Area */}
             <div className="p-8 flex flex-col items-center justify-center bg-zinc-900/50">
+                <p className="text-xs text-zinc-400 mb-6 text-center max-w-[260px] leading-relaxed">
+                    Record audio and instantly share the file with your contacts
+                </p>
                 <div className="mb-4 text-4xl font-mono text-white font-bold">
                     {formatTime(recordingTime)}
                 </div>
