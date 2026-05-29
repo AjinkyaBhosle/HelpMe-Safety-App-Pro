@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Clock, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { registerPlugin } from '@capacitor/core';
+import { Dialog } from '@capacitor/dialog';
 import { hapticService } from '../services/HapticService';
 
 const SmsPlugin = registerPlugin('SmsPlugin');
@@ -95,7 +96,10 @@ const CheckInModal = ({ isOpen, onClose }) => {
             setIsActive(true);
             hapticService.success();
         } catch (e) {
-            alert("Failed to start monitoring: " + e.message);
+            await Dialog.alert({
+                title: 'Error',
+                message: "Failed to start monitoring: " + e.message
+            });
         } finally {
             setLoading(false);
         }
@@ -123,10 +127,14 @@ const CheckInModal = ({ isOpen, onClose }) => {
                 setIsActive(false);
                 setNextCheckInTime(null);
                 setSelectedInterval(null);
+                if (onClose) onClose();
             }, 2000);
 
         } catch (e) {
-            alert("Failed to update status: " + e.message);
+            await Dialog.alert({
+                title: 'Error',
+                message: "Failed to update status: " + e.message
+            });
             setLoading(false);
         } finally {
             // Don't set loading false here immediately if showing success, 

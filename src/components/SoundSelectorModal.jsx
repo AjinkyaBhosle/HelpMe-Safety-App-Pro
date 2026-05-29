@@ -43,60 +43,12 @@ const WhistleIcon = ({ size = 24, className }) => (
 );
 
 const soundOptions = [
-    {
-        id: 'siren',
-        label: 'Siren',
-        icon: Siren,
-        color: 'text-blue-500',
-        bg: 'bg-blue-500/10',
-        activeBg: 'bg-blue-500/30',
-        ring: 'ring-blue-500'
-    },
-    {
-        id: 'alarm',
-        label: 'Alarm',
-        icon: Bell,
-        color: 'text-red-500',
-        bg: 'bg-red-500/10',
-        activeBg: 'bg-red-500/30',
-        ring: 'ring-red-500'
-    },
-    {
-        id: 'dog',
-        label: 'Dog Bark',
-        icon: Dog,
-        color: 'text-amber-700',
-        bg: 'bg-amber-700/10',
-        activeBg: 'bg-amber-700/30',
-        ring: 'ring-amber-700'
-    },
-    {
-        id: 'whistle',
-        label: 'Whistle',
-        icon: WhistleIcon,
-        color: 'text-yellow-500',
-        bg: 'bg-yellow-500/10',
-        activeBg: 'bg-yellow-500/30',
-        ring: 'ring-yellow-500'
-    },
-    {
-        id: 'carhorn',
-        label: 'Car Horn',
-        icon: Car,
-        color: 'text-indigo-500',
-        bg: 'bg-indigo-500/10',
-        activeBg: 'bg-indigo-500/30',
-        ring: 'ring-indigo-500'
-    },
-    {
-        id: 'scream',
-        label: 'Scream',
-        icon: Skull,
-        color: 'text-purple-500',
-        bg: 'bg-purple-500/10',
-        activeBg: 'bg-purple-500/30',
-        ring: 'ring-purple-500'
-    }
+    { id: 'siren', label: 'Siren', icon: Siren, color: 'text-blue-500', hex: '#3b82f6' },
+    { id: 'alarm', label: 'Alarm', icon: Bell, color: 'text-red-500', hex: '#ef4444' },
+    { id: 'dog', label: 'Dog Bark', icon: Dog, color: 'text-orange-500', hex: '#f97316' },
+    { id: 'whistle', label: 'Whistle', icon: WhistleIcon, color: 'text-yellow-500', hex: '#eab308' },
+    { id: 'carhorn', label: 'Car Horn', icon: Car, color: 'text-indigo-500', hex: '#6366f1' },
+    { id: 'scream', label: 'Scream', icon: Skull, color: 'text-purple-500', hex: '#a855f7' }
 ];
 
 const SoundSelectorModal = ({ isOpen, onClose }) => {
@@ -140,7 +92,7 @@ const SoundSelectorModal = ({ isOpen, onClose }) => {
                 </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 overflow-y-auto p-2 -m-2 scrollbar-thin scrollbar-thumb-zinc-700">
+            <div className="grid grid-cols-2 gap-4 overflow-y-auto pr-2 pb-2 scrollbar-thin scrollbar-thumb-zinc-700">
                 {soundOptions.map((sound) => {
                     const Icon = sound.icon;
                     const isActive = activeSound === sound.id;
@@ -149,15 +101,18 @@ const SoundSelectorModal = ({ isOpen, onClose }) => {
                         <button
                             key={sound.id}
                             onClick={() => handleSoundClick(sound.id)}
-                            className={`p-4 rounded-xl flex flex-col items-center gap-3 transition-all ${isActive
-                                ? `${sound.activeBg} ring-2 ring-inset ${sound.ring}`
-                                : `${sound.bg} ring-1 ring-inset ring-transparent hover:ring-zinc-700`
-                                }`}
+                            className={`p-4 rounded-xl flex flex-col items-center gap-3 transition-all outline-none border-none`}
+                            style={{
+                                backgroundColor: isActive ? `${sound.hex}25` : 'rgba(39, 39, 42, 0.4)',
+                                boxShadow: isActive 
+                                    ? `0 0 0 2px ${sound.hex} inset, 0 0 20px ${sound.hex}30` 
+                                    : '0 0 0 1px rgba(255,255,255,0.05) inset'
+                            }}
                         >
-                            <div className={`${sound.color} ${isActive ? 'animate-pulse' : ''} p-2 bg-black/20 rounded-full`}>
+                            <div className={`${sound.color} ${isActive ? 'animate-pulse' : ''} p-2 bg-black/40 rounded-full`}>
                                 <Icon size={32} />
                             </div>
-                            <span className={`font-medium ${isActive ? 'text-white' : 'text-zinc-300'}`}>
+                            <span className={`font-medium ${isActive ? 'text-white' : 'text-zinc-400'}`}>
                                 {sound.label}
                             </span>
                         </button>

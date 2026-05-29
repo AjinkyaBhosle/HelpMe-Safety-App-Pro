@@ -1,11 +1,10 @@
 {
-  "appId": "com.helpme.app",
+  "appId": "com.ajinkya.helpme",
   "appName": "Help Me!",
   "webDir": "dist",
   "backgroundColor": "#000000",
   "server": {
-    "cleartext": true,
-    "androidScheme": "http"
+    "androidScheme": "https"
   },
   "plugins": {
     "SplashScreen": {

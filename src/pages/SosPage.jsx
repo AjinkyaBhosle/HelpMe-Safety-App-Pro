@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+
 import { Settings, ShieldAlert, CircleCheck, Battery, MapPin, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { registerPlugin } from '@capacitor/core';
+import { Device } from '@capacitor/device';
+import { Dialog } from '@capacitor/dialog';
 import { savePanicEvent } from '../utils/panicHistory';
 import { hapticService } from '../services/HapticService';
 
 const SmsPlugin = registerPlugin('SmsPlugin');
 
 const SosPage = ({ onSettingsClick, settings }) => {
-    const navigate = useNavigate();
     const [status, setStatus] = useState('safe');
     const [loading, setLoading] = useState(false);
 
@@ -69,12 +70,12 @@ const SosPage = ({ onSettingsClick, settings }) => {
 
     const getBrowserBattery = async () => {
         try {
-            if ('getBattery' in navigator) {
-                const battery = await navigator.getBattery();
-                return `${Math.round(battery.level * 100)}%`;
+            const info = await Device.getBatteryInfo();
+            if (info && info.batteryLevel !== undefined) {
+                return `${Math.round(info.batteryLevel * 100)}%`;
             }
         } catch (e) {
-            console.warn('Battery API not supported');
+            console.warn('Battery API failed', e);
         }
         return 'Unknown';
     };
@@ -114,11 +115,17 @@ const SosPage = ({ onSettingsClick, settings }) => {
             // even if the app UI is closed or killed during the background process.
 
             // Simple success feedback (updated)
-            alert(`SOS INITIATED!\n\nCalling Primary: 1st Contact\nSMS Alerts: Sent to ${contactCount} contacts.`);
+            await Dialog.alert({
+                title: 'SOS INITIATED!',
+                message: `Calling Primary: 1st Contact\nSMS Alerts: Sent to ${contactCount} contacts.`
+            });
 
         } catch (error) {
             console.error("Panic trigger failed:", error);
-            alert("Failed to send SOS: " + error.message);
+            await Dialog.alert({
+                title: 'Error',
+                message: "Failed to send SOS: " + error.message
+            });
         } finally {
             setStatus('safe');
         }

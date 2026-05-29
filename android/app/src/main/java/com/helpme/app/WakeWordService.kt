@@ -103,7 +103,7 @@ class WakeWordService : Service(), RecognitionListener {
         try {
             // Aggressively attempt to restart the service via AlarmManager if swiped away
             val restartIntent = Intent(applicationContext, BootReceiver::class.java)
-            restartIntent.action = "com.helpme.app.RESTART_VOICE_SOS"
+            restartIntent.action = "com.ajinkya.helpme.RESTART_VOICE_SOS"
             
             val pendingIntent = PendingIntent.getBroadcast(
                 applicationContext,
@@ -171,7 +171,7 @@ class WakeWordService : Service(), RecognitionListener {
 
         // Catch if the user swipes away the notification on Android 13+
         val restartIntent = Intent(this, BootReceiver::class.java)
-        restartIntent.action = "com.helpme.app.RESTART_VOICE_SOS"
+        restartIntent.action = "com.ajinkya.helpme.RESTART_VOICE_SOS"
         val deleteIntent = PendingIntent.getBroadcast(
             this, 2, restartIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
@@ -346,7 +346,7 @@ class WakeWordService : Service(), RecognitionListener {
     private fun triggerPanic() {
         try {
             // 1. Send Broadcast to React Native (If app is open)
-            val intent = Intent("com.helpme.app.VOICE_PANIC")
+            val intent = Intent("com.ajinkya.helpme.VOICE_PANIC")
             sendBroadcast(intent)
 
             // 2. Enqueue WorkManager for Native Offline SMS (Works even if app is closed)
@@ -389,38 +389,7 @@ class WakeWordService : Service(), RecognitionListener {
         } catch (e: Exception) {}
         Log.d(TAG, "WakeWordService Destroyed")
         
-        // Final fallback: Restart using reliable AlarmManager instead of direct startForegroundService (which crashes on Android 13+ background execution)
-        try {
-            val prefs = applicationContext.getSharedPreferences("helpme_prefs", Context.MODE_PRIVATE)
-            val voiceSosEnabled = prefs.getBoolean("voice_sos_enabled", false)
-            if (voiceSosEnabled) {
-                Log.d(TAG, "Service destroyed but Voice SOS is enabled. Restarting via AlarmManager...")
-                val restartIntent = Intent(applicationContext, BootReceiver::class.java)
-                restartIntent.action = "com.helpme.app.RESTART_VOICE_SOS"
-                val pendingIntent = PendingIntent.getBroadcast(
-                    applicationContext,
-                    3,
-                    restartIntent,
-                    PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
-                )
-                
-                val alarmManager = applicationContext.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    alarmManager.setExactAndAllowWhileIdle(
-                        android.app.AlarmManager.ELAPSED_REALTIME_WAKEUP,
-                        android.os.SystemClock.elapsedRealtime() + 3000,
-                        pendingIntent
-                    )
-                } else {
-                    alarmManager.set(
-                        android.app.AlarmManager.ELAPSED_REALTIME_WAKEUP,
-                        android.os.SystemClock.elapsedRealtime() + 3000,
-                        pendingIntent
-                    )
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to schedule restart in onDestroy", e)
-        }
+        // Final fallback logic removed to prevent overlapping restart loops 
+        // with onTaskRemoved() and MainActivity.onCreate()
     }
 }

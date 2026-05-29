@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Share2, Trash2, MapPin, Play, Pause, AlertTriangle, Image as ImageIcon, Video as VideoIcon } from 'lucide-react';
 import { Share } from '@capacitor/share';
+import { Dialog } from '@capacitor/dialog';
 import { safetyMediaService } from '../services/SafetyMediaService';
 import { hapticService } from '../services/HapticService';
 import { generateMapsLink } from '../utils/geoUtils';
@@ -72,7 +73,10 @@ const SafetyGalleryModal = ({ isOpen, onClose }) => {
             });
         } catch (error) {
             console.error("Share failed:", error);
-            alert("Share failed: " + error.message);
+            await Dialog.alert({
+                title: 'Error',
+                message: "Share failed: " + error.message
+            });
         }
     };
 

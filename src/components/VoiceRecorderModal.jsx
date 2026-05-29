@@ -6,6 +6,7 @@ import { hapticService } from '../services/HapticService';
 import { getFormattedLocation, generateMapsLink } from '../utils/geoUtils';
 import ConfirmDialog from './ConfirmDialog';
 import { Share } from '@capacitor/share';
+import { Dialog } from '@capacitor/dialog';
 
 const VoiceRecorderModal = ({ isOpen, onClose }) => {
     const [isRecording, setIsRecording] = useState(false);
@@ -50,7 +51,10 @@ const VoiceRecorderModal = ({ isOpen, onClose }) => {
                 setRecordingTime(prev => prev + 1);
             }, 1000);
         } catch (e) {
-            alert("Could not access microphone.");
+            await Dialog.alert({
+                title: 'Error',
+                message: "Could not access microphone."
+            });
         }
     };
 
@@ -169,7 +173,10 @@ const VoiceRecorderModal = ({ isOpen, onClose }) => {
             };
 
         } catch (e) {
-            alert("Failed to play file");
+            await Dialog.alert({
+                title: 'Error',
+                message: "Failed to play file"
+            });
         }
     };
 

@@ -16,6 +16,8 @@ import { App as CapApp } from '@capacitor/app';
 import { hapticService } from './services/HapticService';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { StatusBar, Style } from '@capacitor/status-bar';
+import { Dialog } from '@capacitor/dialog';
+import { Toast } from '@capacitor/toast';
 
 const SmsPlugin = registerPlugin('SmsPlugin');
 const BillingPlugin = registerPlugin('BillingPlugin');
@@ -561,7 +563,10 @@ function App() {
       }));
       handleCloseSubView();
     } catch (err) {
-      alert('Failed to save settings: ' + err.message);
+      await Dialog.alert({
+        title: 'Error',
+        message: 'Failed to save settings: ' + err.message
+      });
     } finally {
       setLoading(false);
     }
@@ -601,7 +606,7 @@ function App() {
       if (res.isPro) {
         setIsPro(true);
         setShowProModal(false);
-        alert("Pro purchases restored successfully!");
+        await Toast.show({ text: "Pro purchases restored successfully!" });
         if (pendingProView) {
           if (['flashlight', 'voice'].includes(pendingProView)) {
             setShowSettingsMenu(true);

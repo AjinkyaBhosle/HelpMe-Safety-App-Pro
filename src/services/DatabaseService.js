@@ -10,7 +10,7 @@ class DatabaseService {
         this.sqliteConnection = new SQLiteConnection(CapacitorSQLite);
         this.db = null;
         this.isReady = false;
-        this.dbName = 'are_you_dead_db';
+        this.dbName = 'helpme_safety_db';
     }
 
     /**

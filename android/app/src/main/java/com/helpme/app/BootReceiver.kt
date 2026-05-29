@@ -22,7 +22,7 @@ class BootReceiver : BroadcastReceiver() {
             intent.action == Intent.ACTION_MY_PACKAGE_REPLACED ||
             intent.action == "android.intent.action.QUICKBOOT_POWERON" ||
             intent.action == "com.htc.intent.action.QUICKBOOT_POWERON" ||
-            intent.action == "com.helpme.app.RESTART_VOICE_SOS") {
+            intent.action == "com.ajinkya.helpme.RESTART_VOICE_SOS") {
             
             Log.d(TAG, "Device booted — checking if Voice SOS should restart")
             

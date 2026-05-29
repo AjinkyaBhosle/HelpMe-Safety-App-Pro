@@ -90,28 +90,15 @@ class SafetyMediaService {
         if (entryIndex === -1) return;
 
         const entry = this.metadata[entryIndex];
+        const subFolder = entry.type === 'photo' ? 'Photos' : 'Videos';
+        
         this.metadata.splice(entryIndex, 1);
         await this.saveMetadataToStorage();
 
         // 2. Delete actual file
         try {
-            // We need to delete using absolute path if possible, or try mapping
-            // Since we stored fullPath, and it likely starts with file:// or /
-            // Directory.External + path might work if we strip the prefix, but absolute path delete is trickier in Capacitor Filesystem 
-            // without knowing the exact Directory mapping.
-            // However, verify if 'file://' works with empty directory param or if we need native delete.
-            // Actually, AudioRecorder uses Directory.Data.
-            // SafetyCameraPlugin uses `context.getExternalFilesDir(null)`.
-            // Let's try deleting via Filesystem using the path.
-
-            // If fullPath is used, we might rely on the fact that we can just pass the path if it's relative to a Directory.
-            // But it's an absolute path.
-            // Plan: Try to delete using `path: fileName` and `Directory.External` combined with `SafetyCam` folder check?
-            // The plugin saves to `SafetyCam` folder in external files dir.
-            // So: Directory.External, path: 'SafetyCam/' + fileName
-
             await Filesystem.deleteFile({
-                path: `SafetyCam/${fileName}`,
+                path: `SafetyCam/${subFolder}/${fileName}`,
                 directory: Directory.External
             });
 

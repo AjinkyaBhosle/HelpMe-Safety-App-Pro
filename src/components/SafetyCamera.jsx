@@ -4,6 +4,7 @@ import { registerPlugin } from '@capacitor/core';
 import { getFormattedLocation, generateMapsLink } from '../utils/geoUtils';
 import { Share } from '@capacitor/share';
 import { Filesystem } from '@capacitor/filesystem';
+import { Dialog } from '@capacitor/dialog';
 import { hapticService } from '../services/HapticService';
 import { safetyMediaService } from '../services/SafetyMediaService';
 import SafetyGalleryModal from './SafetyGalleryModal';
@@ -78,7 +79,10 @@ const SafetyCamera = ({ onClose }) => {
             }
         } catch (error) {
             console.error('[SafetyCam] Camera error:', error);
-            alert('Camera failed: ' + error);
+            await Dialog.alert({
+                title: 'Error',
+                message: 'Camera failed: ' + error
+            });
         } finally {
             setLoadingType(null);
         }

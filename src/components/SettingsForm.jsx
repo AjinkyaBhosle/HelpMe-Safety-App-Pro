@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Settings, Save, Smartphone, Clock, X, MapPin, Mic } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Geolocation } from '@capacitor/geolocation';
+import { Dialog } from '@capacitor/dialog';
 import { hapticService } from '../services/HapticService';
 
 export default function SettingsForm({ userSettings, onSave, onCancel, loading }) {
@@ -39,7 +40,10 @@ export default function SettingsForm({ userSettings, onSave, onCancel, loading }
 
         // 2. Validate Max Limit
         if (phones.length > 5) {
-            alert(`You can only add up to 5 emergency contacts.\n\nWe found ${phones.length} numbers. Please remove ${phones.length - 5}.\n\n(Parsed: ${phones.join(', ')})`);
+            await Dialog.alert({
+                title: 'Limit Exceeded',
+                message: `You can only add up to 5 emergency contacts.\n\nWe found ${phones.length} numbers. Please remove ${phones.length - 5}.\n\n(Parsed: ${phones.join(', ')})`
+            });
             return;
         }
 
@@ -50,11 +54,17 @@ export default function SettingsForm({ userSettings, onSave, onCancel, loading }
             const digitCount = phone.replace(/[^0-9]/g, '').length;
 
             if (digitCount < 3) {
-                alert(`Invalid Number: "${phone}"\n\nToo short! Please enter a valid mobile or emergency number.\n(You entered ${digitCount} digits)`);
+                await Dialog.alert({
+                    title: 'Invalid Number',
+                    message: `Invalid Number: "${phone}"\n\nToo short! Please enter a valid mobile or emergency number.\n(You entered ${digitCount} digits)`
+                });
                 return;
             }
             if (digitCount > 15) {
-                alert(`Invalid Number: "${phone}"\n\nToo long! Max 15 digits allowed globally (including country code).\n(You entered ${digitCount} digits).\n\nDid you forget a comma?`);
+                await Dialog.alert({
+                    title: 'Invalid Number',
+                    message: `Invalid Number: "${phone}"\n\nToo long! Max 15 digits allowed globally (including country code).\n(You entered ${digitCount} digits).\n\nDid you forget a comma?`
+                });
                 return;
             }
         }

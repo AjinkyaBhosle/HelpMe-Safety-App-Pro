@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Help Me! (Emergency Safety App)
 
 A hybrid mobile application built to provide reliable offline emergency alerts. It uses native Android APIs for SMS/Calls while leveraging React for a modern UI.
@@ -38,6 +37,3 @@ A hybrid mobile application built to provide reliable offline emergency alerts. 
 
 ## Permissions
 This app requires `SEND_SMS`, `CALL_PHONE`, and `ACCESS_FINE_LOCATION` to function. These are critical for the safety features.
-=======
-# HelpMe-Safety-App
->>>>>>> aeca4cc36fa9cb7ad1641629c00802f59618ba76

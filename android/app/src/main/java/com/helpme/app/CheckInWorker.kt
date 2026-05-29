@@ -118,7 +118,7 @@ class CheckInWorker(context: Context, workerParams: WorkerParameters) : Coroutin
 
             // 5. Save Panic History to Native SQLite Database
             try {
-                val dbFile = File(applicationContext.getDatabasePath("are_you_dead_dbSQLite.db").absolutePath)
+                val dbFile = File(applicationContext.getDatabasePath("helpme_safety_dbSQLite.db").absolutePath)
                 if (dbFile.exists()) {
                     val db = SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READWRITE)
                     

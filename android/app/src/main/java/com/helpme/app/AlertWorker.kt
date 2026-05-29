@@ -73,9 +73,9 @@ class AlertWorker(context: Context, workerParams: WorkerParameters) : CoroutineW
                  }
             }
 
-            // 3. Get Current Time (IST)
-            val currentTime = java.text.SimpleDateFormat("dd-MMM-yyyy hh:mm:ss a", java.util.Locale.ENGLISH).apply {
-                timeZone = java.util.TimeZone.getTimeZone("Asia/Kolkata")
+            // 3. Get Current Time (Local)
+            val currentTime = java.text.SimpleDateFormat("dd-MMM-yyyy hh:mm:ss a z", java.util.Locale.ENGLISH).apply {
+                timeZone = java.util.TimeZone.getDefault()
             }.format(java.util.Date())
 
             // 4. Construct Rich Message
@@ -87,7 +87,7 @@ class AlertWorker(context: Context, workerParams: WorkerParameters) : CoroutineW
     Location: $locationLink
 
     Battery: $batLevel%
-    Time: $currentTime IST
+    Time: $currentTime
 
     Please respond or call back urgently.
             """.trimIndent()
@@ -123,7 +123,7 @@ class AlertWorker(context: Context, workerParams: WorkerParameters) : CoroutineW
 
             // 7. Save Panic History to Native SQLite Database
             try {
-                val dbFile = File(applicationContext.getDatabasePath("are_you_dead_dbSQLite.db").absolutePath)
+                val dbFile = File(applicationContext.getDatabasePath("helpme_safety_dbSQLite.db").absolutePath)
                 if (dbFile.exists()) {
                     val db = SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READWRITE)
                     
@@ -187,7 +187,7 @@ class AlertWorker(context: Context, workerParams: WorkerParameters) : CoroutineW
 
         val notification = Notification.Builder(applicationContext, channelId)
             .setContentTitle("Sending Emergency SOS")
-            .setContentText("Tap CALL if auto-dial fails. Sending location...")
+            .setContentText("Tap \"📞 CALL HELP\" if auto-dial fails. Sending location...")
             .setSmallIcon(android.R.drawable.ic_menu_call)
             .addAction(callAction) // Add the action button
             .build()

@@ -36,13 +36,13 @@ class SmsPlugin : Plugin() {
         super.load()
         voicePanicReceiver = object : android.content.BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
-                if (intent?.action == "com.helpme.app.VOICE_PANIC") {
+                if (intent?.action == "com.ajinkya.helpme.VOICE_PANIC") {
                     Log.d("SmsPlugin", "Broadcasting Voice Panic to UI")
                     notifyListeners("onVoicePanic", JSObject())
                 }
             }
         }
-        val filter = android.content.IntentFilter("com.helpme.app.VOICE_PANIC")
+        val filter = android.content.IntentFilter("com.ajinkya.helpme.VOICE_PANIC")
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             context.registerReceiver(voicePanicReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
         } else {
