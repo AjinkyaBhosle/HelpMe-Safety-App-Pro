@@ -134,7 +134,7 @@ const SoundSelectorModal = ({ isOpen, onClose }) => {
                 </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 overflow-y-auto pr-2 pb-2 scrollbar-thin scrollbar-thumb-zinc-700">
+            <div className="grid grid-cols-2 gap-4 overflow-y-auto p-2 -m-2 scrollbar-thin scrollbar-thumb-zinc-700">
                 {soundOptions.map((sound) => {
                     const Icon = sound.icon;
                     const isActive = activeSound === sound.id;
