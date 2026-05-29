@@ -71,8 +71,9 @@ class CheckInWorker(context: Context, workerParams: WorkerParameters) : Coroutin
             val bm = applicationContext.getSystemService(Context.BATTERY_SERVICE) as android.os.BatteryManager
             val batLevel = bm.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY)
 
-            // 2.5. Construct Message (Using original formatting)
-            val time = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault()).format(java.util.Date())
+            val time = java.text.SimpleDateFormat("dd-MMM-yyyy hh:mm:ss a z", java.util.Locale.ENGLISH).apply {
+                timeZone = java.util.TimeZone.getDefault()
+            }.format(java.util.Date())
             val message = """
                 🚨 MISSED CHECK-IN 🚨
                 
