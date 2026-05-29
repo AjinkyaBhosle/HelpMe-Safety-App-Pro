@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Video, Camera } from 'lucide-react';
+import { X, Video, Camera, Info } from 'lucide-react';
 import { registerPlugin } from '@capacitor/core';
 import { getFormattedLocation, generateMapsLink } from '../utils/geoUtils';
 import { Share } from '@capacitor/share';
@@ -15,6 +15,7 @@ const SafetyCamera = ({ onClose }) => {
     const [locationData, setLocationData] = useState({ text: "Initializing GPS...", lat: null, lng: null });
     const [loadingType, setLoadingType] = useState(null); // 'video' | 'photo' | null
     const [showGallery, setShowGallery] = useState(false);
+    const [showInfo, setShowInfo] = useState(false);
 
     // Update GPS periodically
     useEffect(() => {
@@ -40,7 +41,7 @@ const SafetyCamera = ({ onClose }) => {
             const lngStr = locationData.lng ? locationData.lng.toFixed(5) : 'Unknown';
             const mapLink = generateMapsLink(locationData.lat, locationData.lng);
             
-            const watermarkText = `Location: ${mapLink}\nTime: ${new Date().toLocaleString()}`;
+            const watermarkText = `Location: ${mapLink}\nDate & Time: ${new Date().toLocaleString()}`;
 
             if (type === 'video') {
                 result = await SafetyCameraPlugin.captureVideo({ watermark: watermarkText });
@@ -66,10 +67,18 @@ const SafetyCamera = ({ onClose }) => {
 
                 console.log('[SafetyCam] About to share:', { fileUri });
 
-                // Share (No text payload sent so there's no editable caption)
+                let shareText = `🚨 ${actionText}\n`;
+                if (locationData.lat) {
+                    shareText += `📍 Location: ${mapLink}\n`;
+                    shareText += `📌 Lat: ${latStr} | Long: ${lngStr}\n`;
+                }
+                shareText += `🕒 ${new Date().toLocaleString()}`;
+
+                // Share (Include text payload for editable caption)
                 try {
                     await Share.share({
                         title: actionText,
+                        text: shareText,
                         url: fileUri,
                         dialogTitle: `Share ${isVideo ? 'Video' : 'Photo'}`
                     });
@@ -150,14 +159,30 @@ const SafetyCamera = ({ onClose }) => {
                     </button>
                 </div>
 
-                {/* Info Text */}
-                <div className="text-center max-w-sm space-y-2">
-                    <p className="text-zinc-300 text-sm font-medium">
-                        📹 Location & Time are burned into media
-                    </p>
-                    <p className="text-zinc-500 text-xs leading-relaxed px-4">
-                        Permanently watermarked on photo/video files while sharing to prevent tampering
-                    </p>
+                {/* Info Toggle */}
+                <div className="flex flex-col items-center gap-2 w-full mt-4">
+                    <button 
+                        onClick={() => setShowInfo(!showInfo)}
+                        className="flex flex-col items-center gap-1 hover:opacity-80 transition px-2 py-1"
+                    >
+                        <p className="text-zinc-200 text-sm font-medium flex items-center gap-2">
+                            📹 Location & Time are burned into media
+                        </p>
+                        <p className="text-zinc-500 text-[11px] flex items-center justify-center gap-1">
+                            Permanently watermarked to prevent tampering <Info className="w-3 h-3 ml-0.5 opacity-70" />
+                        </p>
+                    </button>
+
+                    {/* Collapsible Info Text */}
+                    {showInfo && (
+                        <div className="bg-zinc-800/80 backdrop-blur-md border border-zinc-700 rounded-xl p-4 text-left max-w-sm w-full space-y-2 text-[11px] text-zinc-400 shadow-2xl mx-4 mt-1">
+                            <ul className="space-y-2 list-disc pl-4 marker:text-zinc-600">
+                                <li><span className="text-yellow-500 font-medium">5-Min Limit:</span> Video recording has a strict 5-minute limit to prevent storage exhaustion.</li>
+                                <li><span className="text-zinc-300 font-medium">Processing Time:</span> Processing takes roughly a 1:1 ratio (e.g., a 5-min video takes ~5 mins to process).</li>
+                                <li><span className="text-zinc-300 font-medium">Storage:</span> Saved to <span className="text-[10px] opacity-75 font-mono break-all block mt-0.5">/Android/data/com.ajinkya.helpme/files/SafetyCam/</span></li>
+                            </ul>
+                        </div>
+                    )}
                 </div>
 
                 {/* Gallery Button */}

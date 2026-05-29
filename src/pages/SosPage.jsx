@@ -1,18 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import { Settings, ShieldAlert, CircleCheck, Battery, MapPin, Zap } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { registerPlugin } from '@capacitor/core';
 import { Device } from '@capacitor/device';
 import { Dialog } from '@capacitor/dialog';
-import { savePanicEvent } from '../utils/panicHistory';
+// Removed savePanicEvent since it's handled natively now
 import { hapticService } from '../services/HapticService';
 
 const SmsPlugin = registerPlugin('SmsPlugin');
 
 const SosPage = ({ onSettingsClick, settings }) => {
     const [status, setStatus] = useState('safe');
-    const [loading, setLoading] = useState(false);
+    const [loading] = useState(false); // Kept loading state for future use
 
     useEffect(() => {
         let voiceListener = null;
@@ -31,10 +31,10 @@ const SosPage = ({ onSettingsClick, settings }) => {
                 voiceListener.remove();
             }
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [settings]); // Re-bind if settings change
 
     // Header Status (Always Active)
-    const getEmail = () => localStorage.getItem('user_email');
 
     const getBrowserLocation = () => {
         return new Promise((resolve) => {
@@ -97,14 +97,13 @@ const SosPage = ({ onSettingsClick, settings }) => {
             }
 
             const contactCount = rawContacts.split(',').length;
-            const emergencyContact = rawContacts; // Pass through fully
 
             // 1. Trigger Native Panic (Background Thread - Most Reliable)
             const nativePromise = SmsPlugin.triggerPanic();
 
             // 2. Capture Browser Data for Local History (Visual Log)
             // run in parallel with native trigger so we don't delay
-            const [locationStr, batteryStr] = await Promise.all([
+            await Promise.all([
                 getBrowserLocation(),
                 getBrowserBattery()
             ]);

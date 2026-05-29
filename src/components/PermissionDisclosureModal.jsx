@@ -2,6 +2,9 @@ import React from 'react';
 import { Shield, AlertTriangle, Check, Send, Phone, MapPin, Mic, Camera, Battery } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { hapticService } from '../services/HapticService';
+import { registerPlugin } from '@capacitor/core';
+
+const SmsPlugin = registerPlugin('SmsPlugin');
 
 const PermissionDisclosureModal = ({ isOpen, onAccept }) => {
     if (!isOpen) return null;
@@ -132,7 +135,7 @@ const PermissionDisclosureModal = ({ isOpen, onAccept }) => {
                                 </div>
                                 <div className="mt-2 p-2.5 bg-blue-900/20 border border-blue-800/40 rounded-lg">
                                     <p className="text-[11px] text-blue-300 leading-relaxed">
-                                        <b>Device Note:</b> Because settings vary by device, if you don't see exact matches for these options, look around your main "App Info" screen to grant all requested permissions and ensure no background limits are applied.
+                                        <b>Device Note:</b> Because settings vary by brand (Samsung, Oppo, Xiaomi), some of these options might be hidden in a <b>"Special app access"</b> menu or under <b>"Permissions"</b>. If you can't find "Alarms & Reminders", simply use the search bar at the top of your phone's main Settings app to search for it!
                                     </p>
                                 </div>
                             </div>

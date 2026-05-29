@@ -33,14 +33,15 @@ const VoiceRecorderModal = ({ isOpen, onClose }) => {
             if (isRecording) stopRecording();
             stopPlayback(); // Cleanup audio on close
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen]);
 
-    const loadRecordings = async () => {
+    async function loadRecordings() {
         const files = await audioRecorder.getRecordings();
         setRecordings(files);
-    };
+    }
 
-    const startRecording = async () => {
+    async function startRecording() {
         try {
             hapticService.medium();
             stopPlayback(); // Stop any playing audio before recording
@@ -50,7 +51,7 @@ const VoiceRecorderModal = ({ isOpen, onClose }) => {
             timerRef.current = setInterval(() => {
                 setRecordingTime(prev => prev + 1);
             }, 1000);
-        } catch (e) {
+        } catch {
             await Dialog.alert({
                 title: 'Error',
                 message: "Could not access microphone."
@@ -58,7 +59,7 @@ const VoiceRecorderModal = ({ isOpen, onClose }) => {
         }
     };
 
-    const stopRecording = async () => {
+    async function stopRecording() {
         hapticService.success();
         if (timerRef.current) clearInterval(timerRef.current);
         setIsRecording(false);
@@ -120,7 +121,7 @@ const VoiceRecorderModal = ({ isOpen, onClose }) => {
 
     // --- Playback Logic ---
 
-    const stopPlayback = () => {
+    function stopPlayback() {
         if (audioRef.current) {
             audioRef.current.pause();
             audioRef.current = null;
@@ -130,7 +131,7 @@ const VoiceRecorderModal = ({ isOpen, onClose }) => {
         setProgress(0);
         setCurrTime(0);
         setDuration(0);
-    };
+    }
 
     const handlePlayPause = async (fileName) => {
         hapticService.light();
@@ -172,7 +173,7 @@ const VoiceRecorderModal = ({ isOpen, onClose }) => {
                 setProgress(100);
             };
 
-        } catch (e) {
+        } catch {
             await Dialog.alert({
                 title: 'Error',
                 message: "Failed to play file"
@@ -219,7 +220,7 @@ const VoiceRecorderModal = ({ isOpen, onClose }) => {
         <div className="w-full max-w-sm bg-zinc-900 rounded-2xl border border-zinc-800 shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-in fade-in zoom-in duration-300">
             {/* Header */}
             <div className="flex justify-between items-center p-4 border-b border-zinc-800">
-                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2 whitespace-nowrap">
                     <Mic className="text-red-500" /> Record & Share Audio
                 </h3>
                 <button onClick={() => { hapticService.light(); onClose(); }} className="p-2 hover:bg-zinc-800 rounded-full text-zinc-400">

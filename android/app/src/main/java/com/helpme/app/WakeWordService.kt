@@ -42,6 +42,8 @@ class WakeWordService : Service(), RecognitionListener {
     private val binder = LocalBinder()
     private val TAG = "WakeWordService"
     private var wakeLock: PowerManager.WakeLock? = null
+    private var audioManager: android.media.AudioManager? = null
+    private var audioRecordingCallback: Any? = null
     
     private var currentState = ListenerState.STARTING
     private var lastAudioTime = 0L
@@ -85,6 +87,25 @@ class WakeWordService : Service(), RecognitionListener {
         showNotification(ListenerState.STARTING, "Starting microphone...")
         initModel()
         watchdogHandler.postDelayed(watchdogRunnable, 30_000)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            audioManager = getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+            audioRecordingCallback = object : android.media.AudioManager.AudioRecordingCallback() {
+                override fun onRecordingConfigChanged(configs: List<android.media.AudioRecordingConfiguration>?) {
+                    super.onRecordingConfigChanged(configs)
+                    Log.d(TAG, "Audio recording config changed. Current State: $currentState")
+                    if (currentState != ListenerState.ACTIVE && model != null) {
+                        Log.d(TAG, "Microphone might be free. Attempting to restart listener...")
+                        val handler = android.os.Handler(android.os.Looper.getMainLooper())
+                        handler.postDelayed({ startListening() }, 1500)
+                    }
+                }
+            }
+            audioManager?.registerAudioRecordingCallback(
+                audioRecordingCallback as android.media.AudioManager.AudioRecordingCallback,
+                null
+            )
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -102,24 +123,33 @@ class WakeWordService : Service(), RecognitionListener {
         
         try {
             // Aggressively attempt to restart the service via AlarmManager if swiped away
-            val restartIntent = Intent(applicationContext, BootReceiver::class.java)
+            val restartIntent = Intent(applicationContext, VoiceRestartReceiver::class.java)
             restartIntent.action = "com.ajinkya.helpme.RESTART_VOICE_SOS"
             
             val pendingIntent = PendingIntent.getBroadcast(
                 applicationContext,
                 1,
                 restartIntent,
-                PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
             
             val alarmManager = applicationContext.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
             // Use setExactAndAllowWhileIdle() for robust recovery when swiped away
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                alarmManager.setExactAndAllowWhileIdle(
-                    android.app.AlarmManager.ELAPSED_REALTIME_WAKEUP,
-                    android.os.SystemClock.elapsedRealtime() + 3000,
-                    pendingIntent
-                )
+                try {
+                    alarmManager.setExactAndAllowWhileIdle(
+                        android.app.AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                        android.os.SystemClock.elapsedRealtime() + 3000,
+                        pendingIntent
+                    )
+                } catch (se: SecurityException) {
+                    Log.w(TAG, "Exact alarm permission denied. Falling back to inexact alarm.")
+                    alarmManager.setAndAllowWhileIdle(
+                        android.app.AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                        android.os.SystemClock.elapsedRealtime() + 3000,
+                        pendingIntent
+                    )
+                }
             } else {
                 alarmManager.set(
                     android.app.AlarmManager.ELAPSED_REALTIME_WAKEUP,
@@ -170,7 +200,7 @@ class WakeWordService : Service(), RecognitionListener {
         )
 
         // Catch if the user swipes away the notification on Android 13+
-        val restartIntent = Intent(this, BootReceiver::class.java)
+        val restartIntent = Intent(this, VoiceRestartReceiver::class.java)
         restartIntent.action = "com.ajinkya.helpme.RESTART_VOICE_SOS"
         val deleteIntent = PendingIntent.getBroadcast(
             this, 2, restartIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
@@ -217,6 +247,9 @@ class WakeWordService : Service(), RecognitionListener {
             },
             { exception: IOException ->
                 Log.e(TAG, "Failed to unpack model", exception)
+                try {
+                    wakeLock?.release()
+                } catch (e: Exception) {}
             }
         )
     }
@@ -248,6 +281,9 @@ class WakeWordService : Service(), RecognitionListener {
             
             speechService = SpeechService(rec, 16000.0f)
             speechService?.startListening(this)
+            
+            // Initialize watchdog timer as soon as mic opens
+            lastAudioTime = System.currentTimeMillis()
             
             Log.d(TAG, "Listening for 'Help Me'... (grace period: ${STARTUP_GRACE_MS}ms)")
         } catch (e: Exception) {
@@ -378,6 +414,13 @@ class WakeWordService : Service(), RecognitionListener {
     override fun onDestroy() {
         super.onDestroy()
         watchdogHandler.removeCallbacks(watchdogRunnable)
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            audioRecordingCallback?.let {
+                audioManager?.unregisterAudioRecordingCallback(it as android.media.AudioManager.AudioRecordingCallback)
+            }
+        }
+        
         try {
             speechService?.stop()
             speechService?.shutdown()

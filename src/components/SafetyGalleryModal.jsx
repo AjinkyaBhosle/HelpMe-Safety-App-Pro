@@ -59,8 +59,10 @@ const SafetyGalleryModal = ({ isOpen, onClose }) => {
 
         try {
             const mapLink = generateMapsLink(media.location.lat, media.location.lng);
-            const typeStr = isVideo(media) ? 'Video' : 'Photo';
-            const shareText = `🚨 Safety ${typeStr} Recorded\n📍 Location: ${mapLink}\n📌 ${media.location.text || 'Location available'}\n🕒 ${new Date(media.createdAt).toLocaleString()}`;
+            const isVid = isVideo(media);
+            const typeStr = isVid ? 'Video' : 'Photo';
+            const actionVerb = isVid ? 'Recorded' : 'Captured';
+            const shareText = `🚨 Safety ${typeStr} ${actionVerb}\n📍 Location: ${mapLink}\n📌 ${media.location.text || 'Location available'}\n🕒 ${new Date(media.createdAt).toLocaleString()}`;
 
             // Allow file:// uri for sharing
             const fileUri = `file://${media.fullPath}`;

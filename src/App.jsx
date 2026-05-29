@@ -401,14 +401,18 @@ function App() {
 
     try {
       const overlayStatus = await SmsPlugin.checkOverlayPermission();
-      if (!overlayStatus.granted) {
+      const hasPromptedOverlay = localStorage.getItem('prompted_overlay');
+      if (!overlayStatus.granted || !hasPromptedOverlay) {
         const overlayConfirmRes = await SmsPlugin.showConfirm({
           title: "Background Call Permission Required",
           message: "To ensure your phone automatically dials your emergency contact when locked, Android requires 'Display over other apps' permission.\n\nTap OK to open settings.\n\n⚠️ IMPORTANT: If you see a long list of apps, use the search icon at the top to find 'Help Me!' and toggle it ON."
         });
         if (overlayConfirmRes.value) {
+          localStorage.setItem('prompted_overlay', 'true');
           await SmsPlugin.openOverlaySettings();
           await waitForAppResume();
+        } else {
+          localStorage.setItem('prompted_overlay', 'true');
         }
       }
     } catch (overlayErr) {
@@ -417,14 +421,18 @@ function App() {
     
     try {
       const batStatus = await SmsPlugin.isIgnoringBatteryOptimizations();
-      if (!batStatus.granted) {
+      const hasPromptedBat = localStorage.getItem('prompted_battery');
+      if (!batStatus.granted || !hasPromptedBat) {
         const batConfirmRes = await SmsPlugin.showConfirm({
           title: "Allow Background Activity",
           message: "To ensure 'Voice SOS' and 'Scheduled Check-in' work reliably 24/7, please click 'Allow' on the next prompt.\n\nIf you are taken to the App Info screen instead, tap on 'Battery usage' and select 'Allow background activity' or 'Unrestricted'."
         });
         if (batConfirmRes.value) {
+          localStorage.setItem('prompted_battery', 'true');
           await SmsPlugin.openBatteryOptimizationSettings();
           await waitForAppResume();
+        } else {
+          localStorage.setItem('prompted_battery', 'true');
         }
       }
     } catch (batErr) {
@@ -433,14 +441,19 @@ function App() {
     
     try {
       const alarmStatus = await SmsPlugin.canScheduleExactAlarms();
-      if (!alarmStatus.granted) {
+      const hasPromptedAlarms = localStorage.getItem('prompted_alarms');
+      
+      if (!alarmStatus.granted || !hasPromptedAlarms) {
         const alarmConfirmRes = await SmsPlugin.showConfirm({
           title: "Alarms & Reminders",
-          message: "To allow Help Me! to automatically restart the Voice SOS listener if Android stops it, please enable 'Alarms & reminders' for the app in the next screen."
+          message: "To allow Help Me! to automatically restart the Voice SOS listener if Android stops it, please enable 'Alarms & reminders' for the app in the next screen (if available)."
         });
         if (alarmConfirmRes.value) {
+          localStorage.setItem('prompted_alarms', 'true');
           await SmsPlugin.openExactAlarmSettings();
           await waitForAppResume();
+        } else {
+          localStorage.setItem('prompted_alarms', 'true');
         }
       }
     } catch (alarmErr) {
@@ -450,15 +463,17 @@ function App() {
     try {
       const hibernateStatus = await SmsPlugin.isAppHibernationWhitelisted();
       const hasPromptedHiber = localStorage.getItem('prompted_hibernation');
-      if (!hibernateStatus.granted && !hasPromptedHiber) {
+      if (!hasPromptedHiber) {
         const hibernateConfirmRes = await SmsPlugin.showConfirm({
           title: "Manage App if Unused",
-          message: "To prevent Android from silently revoking your safety permissions, please turn OFF 'Manage app if unused' in the next screen."
+          message: "To prevent Android from silently revoking your safety permissions, please turn OFF 'Manage app if unused' in the next screen (if available)."
         });
         if (hibernateConfirmRes.value) {
           localStorage.setItem('prompted_hibernation', 'true');
           await SmsPlugin.openAppInfoSettings();
           await waitForAppResume();
+        } else {
+          localStorage.setItem('prompted_hibernation', 'true');
         }
       }
     } catch (hibernateErr) {
@@ -467,14 +482,18 @@ function App() {
 
     try {
       const notificationStatus = await SmsPlugin.areNotificationsEnabled();
-      if (!notificationStatus.granted) {
+      const hasPromptedNotif = localStorage.getItem('prompted_notif');
+      if (!notificationStatus.granted || !hasPromptedNotif) {
         const notifConfirmRes = await SmsPlugin.showConfirm({
           title: "Manage Notifications",
           message: "To ensure you receive critical safety alerts and status updates, please enable Notifications for 'Help Me!' in the next screen."
         });
         if (notifConfirmRes.value) {
+          localStorage.setItem('prompted_notif', 'true');
           await SmsPlugin.openNotificationSettings();
           await waitForAppResume();
+        } else {
+          localStorage.setItem('prompted_notif', 'true');
         }
       }
     } catch (notifErr) {
@@ -484,7 +503,7 @@ function App() {
     try {
       const dndStatus = await SmsPlugin.canBypassDnd();
       const hasPromptedDnd = localStorage.getItem('prompted_dnd');
-      if (!dndStatus.granted && !hasPromptedDnd) {
+      if (!hasPromptedDnd) {
         const dndConfirmRes = await SmsPlugin.showConfirm({
           title: "Do Not Disturb",
           message: "To ensure Voice SOS and alarms still sound even if your phone is in Do Not Disturb mode, please toggle 'Allow in Do Not Disturb' in the next screen."
@@ -493,6 +512,8 @@ function App() {
           localStorage.setItem('prompted_dnd', 'true');
           await SmsPlugin.openNotificationSettings();
           await waitForAppResume();
+        } else {
+          localStorage.setItem('prompted_dnd', 'true');
         }
       }
     } catch (dndErr) {

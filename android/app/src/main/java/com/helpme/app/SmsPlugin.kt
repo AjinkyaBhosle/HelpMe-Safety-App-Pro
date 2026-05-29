@@ -538,4 +538,70 @@ class SmsPlugin : Plugin() {
              call.reject("Failed to cancel: ${e.message}")
         }
     }
+    @PluginMethod
+    fun getAppStandbyBucket(call: PluginCall) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            try {
+                val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as android.app.usage.UsageStatsManager
+                val bucket = usageStatsManager.appStandbyBucket
+                val bucketName = when (bucket) {
+                    android.app.usage.UsageStatsManager.STANDBY_BUCKET_ACTIVE -> "ACTIVE"
+                    android.app.usage.UsageStatsManager.STANDBY_BUCKET_WORKING_SET -> "WORKING_SET"
+                    android.app.usage.UsageStatsManager.STANDBY_BUCKET_FREQUENT -> "FREQUENT"
+                    android.app.usage.UsageStatsManager.STANDBY_BUCKET_RARE -> "RARE"
+                    android.app.usage.UsageStatsManager.STANDBY_BUCKET_RESTRICTED -> "RESTRICTED"
+                    else -> "UNKNOWN"
+                }
+                call.resolve(JSObject().put("bucket", bucketName))
+            } catch (e: Exception) {
+                call.resolve(JSObject().put("bucket", "ERROR"))
+            }
+        } else {
+            call.resolve(JSObject().put("bucket", "UNSUPPORTED"))
+        }
+    }
+
+    @PluginMethod
+    fun openAutoStartSettings(call: PluginCall) {
+        val intents = arrayOf(
+            Intent().setComponent(android.content.ComponentName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity")),
+            Intent().setComponent(android.content.ComponentName("com.letv.android.letvsafe", "com.letv.android.letvsafe.AutobootManageActivity")),
+            Intent().setComponent(android.content.ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity")),
+            Intent().setComponent(android.content.ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.optimize.process.ProtectActivity")),
+            Intent().setComponent(android.content.ComponentName("com.coloros.safecenter", "com.coloros.safecenter.permission.startup.StartupAppListActivity")),
+            Intent().setComponent(android.content.ComponentName("com.coloros.safecenter", "com.coloros.safecenter.startupapp.StartupAppListActivity")),
+            Intent().setComponent(android.content.ComponentName("com.oppo.safe", "com.oppo.safe.permission.startup.StartupAppListActivity")),
+            Intent().setComponent(android.content.ComponentName("com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity")),
+            Intent().setComponent(android.content.ComponentName("com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.BgStartUpManager")),
+            Intent().setComponent(android.content.ComponentName("com.vivo.permissionmanager", "com.vivo.permissionmanager.activity.BgStartUpManagerActivity")),
+            Intent().setComponent(android.content.ComponentName("com.samsung.android.lool", "com.samsung.android.sm.ui.battery.BatteryActivity"))
+        )
+
+        var opened = false
+        for (intent in intents) {
+            try {
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
+                opened = true
+                break
+            } catch (e: Exception) {
+                // Ignore and try the next one
+            }
+        }
+        
+        if (opened) {
+            call.resolve(JSObject().put("success", true))
+        } else {
+            // Fallback to app info settings
+            try {
+                val fallbackIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                fallbackIntent.data = Uri.parse("package:" + context.packageName)
+                fallbackIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(fallbackIntent)
+                call.resolve(JSObject().put("success", true).put("fallback", true))
+            } catch (e: Exception) {
+                call.reject("Could not open any settings")
+            }
+        }
+    }
 }

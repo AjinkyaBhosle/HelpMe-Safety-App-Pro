@@ -78,6 +78,15 @@
             android:foregroundServiceType="microphone"
             android:stopWithTask="false"
             android:exported="false" />
+            
+        <receiver
+            android:name=".VoiceRestartReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.ajinkya.helpme.RESTART_VOICE_SOS" />
+            </intent-filter>
+        </receiver>
 
         <receiver
             android:name=".BootReceiver"

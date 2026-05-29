@@ -145,11 +145,13 @@ class SafetyCameraPlugin : Plugin() {
         }
     }
 
-    private fun createWatermarkImage(watermarkText: String): String? {
+    private fun createWatermarkImage(watermarkText: String, videoWidth: Int): String? {
         try {
+            val calculatedTextSize = (videoWidth * 0.035f).coerceAtLeast(20f).coerceAtMost(60f)
             val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.WHITE
-                textSize = 48f
+                color = Color.YELLOW
+                typeface = android.graphics.Typeface.DEFAULT_BOLD
+                textSize = calculatedTextSize
                 style = Paint.Style.FILL
                 setShadowLayer(5f, 3f, 3f, Color.BLACK)
             }
@@ -164,6 +166,20 @@ class SafetyCameraPlugin : Plugin() {
             for (line in lines) {
                 val w = paint.measureText(line)
                 if (w > maxWidth) maxWidth = w
+            }
+            
+            // Constrain text to fit inside the video frame horizontally (accounting for 30px padding on left/right)
+            val maxAllowedWidth = videoWidth - 60f
+            if (maxWidth > maxAllowedWidth && maxWidth > 0f) {
+                val scale = maxAllowedWidth / maxWidth
+                paint.textSize = paint.textSize * scale
+                
+                // Recalculate max width after scaling down
+                maxWidth = 0f
+                for (line in lines) {
+                    val w = paint.measureText(line)
+                    if (w > maxWidth) maxWidth = w
+                }
             }
             
             val width = (maxWidth + padding * 2).toInt()
@@ -199,7 +215,28 @@ class SafetyCameraPlugin : Plugin() {
     private fun processVideoWatermark(inputPath: String, watermarkText: String, call: PluginCall?, ret: JSObject) {
         val outputPath = inputPath.replace(".mp4", "_wm.mp4")
         
-        val watermarkImagePath = createWatermarkImage(watermarkText)
+        var videoWidth = 720
+        try {
+            val retriever = android.media.MediaMetadataRetriever()
+            retriever.setDataSource(inputPath)
+            val widthStr = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)
+            val heightStr = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)
+            val rotationStr = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
+            
+            var w = widthStr?.toIntOrNull() ?: 720
+            var h = heightStr?.toIntOrNull() ?: 1280
+            val rotation = rotationStr?.toIntOrNull() ?: 0
+            
+            if (rotation == 90 || rotation == 270) {
+                w = h.also { h = w }
+            }
+            videoWidth = w
+            retriever.release()
+        } catch (e: Exception) {
+            Log.e("SafetyCameraPlugin", "Failed to extract video metadata", e)
+        }
+        
+        val watermarkImagePath = createWatermarkImage(watermarkText, videoWidth)
         
         Thread {
             try {
@@ -208,7 +245,7 @@ class SafetyCameraPlugin : Plugin() {
                     return@Thread
                 }
                 
-                // Use hardware encoder with overlay filter
+                // Reverting to h264_mediacodec since libx264 is not compiled into the current FFmpegKit package
                 val cmd = "-y -i \"$inputPath\" -i \"$watermarkImagePath\" -filter_complex \"[0:v]scale=trunc(iw/2)*2:trunc(ih/2)*2[v0];[v0][1:v]overlay=30:main_h-overlay_h-30\" -c:v h264_mediacodec -b:v 3M -c:a copy \"$outputPath\""
                 
                 val session = FFmpegKit.execute(cmd)
@@ -248,7 +285,8 @@ class SafetyCameraPlugin : Plugin() {
             val calculatedTextSize = (bitmap.width * 0.025f).coerceAtLeast(24f)
             
             val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.WHITE
+                color = Color.YELLOW
+                typeface = android.graphics.Typeface.DEFAULT_BOLD
                 textSize = calculatedTextSize
                 style = Paint.Style.FILL
                 setShadowLayer(4f, 2f, 2f, Color.BLACK)

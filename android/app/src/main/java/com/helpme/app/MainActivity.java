@@ -37,6 +37,20 @@ public class MainActivity extends BridgeActivity {
             } catch (Exception e) {
                 android.util.Log.e("MainActivity", "Failed to start WakeWordService", e);
             }
+            
+            // Enqueue Periodic Worker to ensure service remains alive
+            try {
+                androidx.work.PeriodicWorkRequest request = new androidx.work.PeriodicWorkRequest.Builder(
+                    VoiceServiceHealthWorker.class, 15, java.util.concurrent.TimeUnit.MINUTES
+                ).build();
+                androidx.work.WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                    "voice_sos_health",
+                    androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+                    request
+                );
+            } catch (Exception e) {
+                android.util.Log.e("MainActivity", "Failed to enqueue VoiceServiceHealthWorker", e);
+            }
         }
     }
 
