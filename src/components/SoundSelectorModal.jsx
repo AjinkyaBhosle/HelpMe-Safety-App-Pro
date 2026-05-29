@@ -49,7 +49,8 @@ const soundOptions = [
         icon: Siren,
         color: 'text-blue-500',
         bg: 'bg-blue-500/10',
-        activeBg: 'bg-blue-500/30'
+        activeBg: 'bg-blue-500/30',
+        ring: 'ring-blue-500'
     },
     {
         id: 'alarm',
@@ -57,7 +58,8 @@ const soundOptions = [
         icon: Bell,
         color: 'text-red-500',
         bg: 'bg-red-500/10',
-        activeBg: 'bg-red-500/30'
+        activeBg: 'bg-red-500/30',
+        ring: 'ring-red-500'
     },
     {
         id: 'dog',
@@ -65,7 +67,8 @@ const soundOptions = [
         icon: Dog,
         color: 'text-amber-700',
         bg: 'bg-amber-700/10',
-        activeBg: 'bg-amber-700/30'
+        activeBg: 'bg-amber-700/30',
+        ring: 'ring-amber-700'
     },
     {
         id: 'whistle',
@@ -73,7 +76,8 @@ const soundOptions = [
         icon: WhistleIcon,
         color: 'text-yellow-500',
         bg: 'bg-yellow-500/10',
-        activeBg: 'bg-yellow-500/30'
+        activeBg: 'bg-yellow-500/30',
+        ring: 'ring-yellow-500'
     },
     {
         id: 'carhorn',
@@ -81,7 +85,8 @@ const soundOptions = [
         icon: Car,
         color: 'text-indigo-500',
         bg: 'bg-indigo-500/10',
-        activeBg: 'bg-indigo-500/30'
+        activeBg: 'bg-indigo-500/30',
+        ring: 'ring-indigo-500'
     },
     {
         id: 'scream',
@@ -89,7 +94,8 @@ const soundOptions = [
         icon: Skull,
         color: 'text-purple-500',
         bg: 'bg-purple-500/10',
-        activeBg: 'bg-purple-500/30'
+        activeBg: 'bg-purple-500/30',
+        ring: 'ring-purple-500'
     }
 ];
 
@@ -143,9 +149,9 @@ const SoundSelectorModal = ({ isOpen, onClose }) => {
                         <button
                             key={sound.id}
                             onClick={() => handleSoundClick(sound.id)}
-                            className={`p-4 rounded-xl flex flex-col items-center gap-3 transition-all border ${isActive
-                                ? `${sound.activeBg} border-${sound.color.split('-')[1]}-500/50 scale-105`
-                                : `${sound.bg} border-transparent hover:border-zinc-700`
+                            className={`p-4 rounded-xl flex flex-col items-center gap-3 transition-all ${isActive
+                                ? `${sound.activeBg} ring-2 ring-inset ${sound.ring}`
+                                : `${sound.bg} ring-1 ring-inset ring-transparent hover:ring-zinc-700`
                                 }`}
                         >
                             <div className={`${sound.color} ${isActive ? 'animate-pulse' : ''} p-2 bg-black/20 rounded-full`}>
