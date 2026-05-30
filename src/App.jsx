@@ -521,8 +521,8 @@ function App() {
       const hasPromptedAutoStart = localStorage.getItem('prompted_autostart');
       if (!hasPromptedAutoStart) {
         const autoStartConfirmRes = await SmsPlugin.showConfirm({
-          title: "Enable AutoStart Whitelisting",
-          message: "To ensure 'Voice SOS' starts automatically when your phone reboots and survives aggressive background cleaning, please enable AutoStart for 'Help Me!' in the next screen (if available on your device)."
+          title: "Enable AutoStart (Auto-Launch)",
+          message: "To ensure 'Voice SOS' starts on phone reboot and survives background cleaning:\n\n1. Tap OK to open Settings.\n2. If taken to App Info, tap 'Battery' or 'Battery usage' and toggle ON 'Allow auto-launch' or 'Allow background activity'.\n3. If taken to a list of apps, find 'Help Me!' and toggle it ON."
         });
         if (autoStartConfirmRes.value) {
           localStorage.setItem('prompted_autostart', 'true');
