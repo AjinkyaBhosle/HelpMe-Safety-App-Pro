@@ -80,6 +80,20 @@
             android:stopWithTask="false"
             android:exported="false" />
             
+        <!-- Advanced Persistence Guardian -->
+        <service
+            android:name=".GuardianService"
+            android:process=":guardian"
+            android:foregroundServiceType="specialUse"
+            android:exported="false">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                      android:value="Background watchdog to keep SOS microphone alive" />
+        </service>
+
+        <receiver
+            android:name=".HeartbeatReceiver"
+            android:exported="false" />
+
 
         <receiver
             android:name=".VoiceRestartReceiver"

@@ -165,8 +165,53 @@ class WakeWordService : Service(), RecognitionListener {
         }
     }
 
+    private fun scheduleHeartbeat() {
+        try {
+            val alarmManager = getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+            
+            val intent = Intent(this, HeartbeatReceiver::class.java)
+            val operationIntent = android.app.PendingIntent.getBroadcast(
+                this, 
+                777, 
+                intent, 
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+            )
+
+            val showIntent = Intent(this, MainActivity::class.java)
+            val pendingShowIntent = android.app.PendingIntent.getActivity(
+                this,
+                778,
+                showIntent,
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+            )
+
+            val sixHoursMs = 6 * 60 * 60 * 1000L
+            val triggerTime = System.currentTimeMillis() + sixHoursMs
+
+            val alarmClockInfo = android.app.AlarmManager.AlarmClockInfo(triggerTime, pendingShowIntent)
+            alarmManager.setAlarmClock(alarmClockInfo, operationIntent)
+            Log.d(TAG, "Heartbeat AlarmClock scheduled for 6 hours from now")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to schedule Heartbeat", e)
+        }
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "WakeWordService Started")
+        
+        try {
+            val guardianIntent = Intent(this, GuardianService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(guardianIntent)
+            } else {
+                startService(guardianIntent)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start GuardianService", e)
+        }
+        
+        scheduleHeartbeat()
+        
         return START_STICKY // Restart if killed by the system
     }
 
