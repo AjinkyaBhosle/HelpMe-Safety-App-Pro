@@ -29,7 +29,7 @@ class ShakeSensorService : Service(), SensorEventListener {
 
     // Shake detection parameters
     private val SHAKE_THRESHOLD_GRAVITY = 3.2f
-    private val SHAKE_SLOP_TIME_MS = 500
+    private val SHAKE_SLOP_TIME_MS = 200
     private val SHAKE_COUNT_RESET_TIME_MS = 3000
     private val SHAKE_MIN_COUNT = 2
 
