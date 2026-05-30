@@ -133,7 +133,7 @@ const PermissionDisclosureModal = ({ isOpen, onAccept }) => {
                                         <p className="text-zinc-300 ml-5"><b>Allow</b> (ensures the foreground service and alerts are never suppressed).</p>
                                     </div>
                                     <div className="p-3">
-                                        <p className="font-semibold text-amber-400 mb-1 flex items-center gap-1.5"><span className="text-amber-500">⑤</span> Lock in Recents (Oppo/Vivo/Xiaomi)</p>
+                                        <p className="font-semibold text-amber-400 mb-1 flex items-center gap-1.5"><span className="text-amber-500">⑤</span> Lock in Recent Apps</p>
                                         <p className="text-zinc-300 ml-5">Open your <b>Recent Apps</b> screen and <b>Lock</b> (🔒) the Help Me! card so the OS doesn't kill it to save RAM.</p>
                                     </div>
                                 </div>
