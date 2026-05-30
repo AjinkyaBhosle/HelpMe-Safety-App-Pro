@@ -257,21 +257,52 @@ class WakeWordService : Service(), RecognitionListener {
         
         Log.d(TAG, "Unpacking Vosk Model ($accent)...")
         showNotification(ListenerState.STARTING, "Loading $accentLabel English model...")
-        StorageService.unpack(this, assetPath, targetPath,
-            { model: Model? ->
-                this.model = model
-                Log.d(TAG, "Vosk model ($accent) loaded successfully")
-                showNotification(ListenerState.STARTING, "Model ready — opening microphone...")
-                startListening()
-            },
-            { exception: IOException ->
-                Log.e(TAG, "Failed to unpack model", exception)
-                showNotification(ListenerState.FAILED, "Model load failed — restart Voice SOS")
-                try {
-                    wakeLock?.release()
-                } catch (e: Exception) {}
+        
+        Thread {
+            try {
+                val targetDir = java.io.File(filesDir, targetPath)
+                if (!targetDir.exists()) {
+                    copyAssets(assetPath, targetDir)
+                }
+                
+                val newModel = Model(targetDir.absolutePath)
+                android.os.Handler(android.os.Looper.getMainLooper()).post {
+                    this.model = newModel
+                    Log.d(TAG, "Vosk model ($accent) loaded successfully")
+                    showNotification(ListenerState.STARTING, "Model ready — opening microphone...")
+                    startListening()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to unpack or load model", e)
+                android.os.Handler(android.os.Looper.getMainLooper()).post {
+                    showNotification(ListenerState.FAILED, "Model load failed — restart Voice SOS")
+                    try {
+                        wakeLock?.release()
+                    } catch (ignore: Exception) {}
+                }
             }
-        )
+        }.start()
+    }
+
+    private fun copyAssets(assetPath: String, targetDir: java.io.File) {
+        val assets = assets.list(assetPath) ?: return
+        if (!targetDir.exists()) targetDir.mkdirs()
+        
+        for (asset in assets) {
+            val srcPath = "$assetPath/$asset"
+            val destFile = java.io.File(targetDir, asset)
+            
+            val subAssets = this.assets.list(srcPath)
+            if (subAssets != null && subAssets.isNotEmpty()) {
+                copyAssets(srcPath, destFile)
+            } else {
+                this.assets.open(srcPath).use { inputStream ->
+                    java.io.FileOutputStream(destFile).use { outputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+            }
+        }
     }
 
     // Energy monitor logic removed to prevent microphone starvation
