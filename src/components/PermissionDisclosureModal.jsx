@@ -128,14 +128,18 @@ const PermissionDisclosureModal = ({ isOpen, onAccept }) => {
                                         <p className="font-semibold text-amber-400 mb-1 flex items-center gap-1.5"><span className="text-amber-500">③</span> App Unused</p>
                                         <p className="text-zinc-300 ml-5">Turn OFF <b>"Manage app if unused"</b> to prevent permissions from being revoked.</p>
                                     </div>
-                                    <div className="p-3">
+                                    <div className="p-3 border-b border-amber-900/20">
                                         <p className="font-semibold text-amber-400 mb-1 flex items-center gap-1.5"><span className="text-amber-500">④</span> Do Not Disturb</p>
                                         <p className="text-zinc-300 ml-5"><b>Allow</b> (ensures the foreground service and alerts are never suppressed).</p>
+                                    </div>
+                                    <div className="p-3">
+                                        <p className="font-semibold text-amber-400 mb-1 flex items-center gap-1.5"><span className="text-amber-500">⑤</span> Lock in Recents (Oppo/Vivo/Xiaomi)</p>
+                                        <p className="text-zinc-300 ml-5">Open your <b>Recent Apps</b> screen and <b>Lock</b> (🔒) the Help Me! card so the OS doesn't kill it to save RAM.</p>
                                     </div>
                                 </div>
                                 <div className="mt-2 p-2.5 bg-blue-900/20 border border-blue-800/40 rounded-lg">
                                     <p className="text-[11px] text-blue-300 leading-relaxed">
-                                        <b>Device Note:</b> Because settings vary by brand (Samsung, Oppo, Xiaomi), some of these options might be hidden in a <b>"Special app access"</b> menu or under <b>"Permissions"</b>. If you can't find "Alarms & Reminders", simply use the search bar at the top of your phone's main Settings app to search for it!
+                                        <b>Device Note:</b> Because settings vary by brand, some options might be hidden in a <b>"Special app access"</b> menu or under <b>"Permissions"</b>. If you can't find them, use the search bar in your phone's Settings app!
                                     </p>
                                 </div>
                             </div>
