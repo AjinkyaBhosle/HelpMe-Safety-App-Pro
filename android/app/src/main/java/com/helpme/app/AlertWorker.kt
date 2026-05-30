@@ -87,7 +87,7 @@ class AlertWorker(context: Context, workerParams: WorkerParameters) : CoroutineW
     Location: $locationLink
 
     Battery: $batLevel%
-    Time: $currentTime
+    Date & Time: $currentTime
 
     Please respond or call back urgently.
             """.trimIndent()

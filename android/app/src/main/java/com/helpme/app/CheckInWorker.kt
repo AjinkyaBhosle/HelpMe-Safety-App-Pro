@@ -81,7 +81,7 @@ class CheckInWorker(context: Context, workerParams: WorkerParameters) : Coroutin
                 
                 Location: $locationLink
                 Battery: $batLevel%
-                Time: $time
+                Date & Time: $time
             """.trimIndent()
 
             // 3. Send SMS to all contacts
