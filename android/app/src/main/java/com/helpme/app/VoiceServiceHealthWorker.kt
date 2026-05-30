@@ -22,16 +22,15 @@ class VoiceServiceHealthWorker(
     override suspend fun doWork(): Result {
         Log.d(TAG, "Running Voice SOS Health Check...")
         
-        val prefs = applicationContext.getSharedPreferences("helpme_prefs", Context.MODE_PRIVATE)
-        val voiceSosEnabled = prefs.getBoolean("voice_sos_enabled", false)
+        val voiceSosEnabled = VoiceSettings.isVoiceSosEnabled(applicationContext)
 
         if (!voiceSosEnabled) {
-            Log.d(TAG, "Voice SOS disabled in prefs. No action needed.")
+            Log.d(TAG, "Voice SOS disabled. No action needed.")
             return Result.success()
         }
 
-        if (!isServiceRunning(WakeWordService::class.java)) {
-            Log.w(TAG, "WakeWordService is NOT running! Attempting to revive it.")
+        if (!isServiceAlive()) {
+            Log.w(TAG, "WakeWordService is NOT alive/healthy! Attempting to revive it.")
             try {
                 val serviceIntent = Intent(applicationContext, WakeWordService::class.java)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -45,19 +44,24 @@ class VoiceServiceHealthWorker(
                 return Result.retry()
             }
         } else {
-            Log.d(TAG, "WakeWordService is currently running smoothly.")
+            Log.d(TAG, "WakeWordService is currently running and healthy.")
         }
 
         return Result.success()
     }
 
-    @Suppress("DEPRECATION")
-    private fun isServiceRunning(serviceClass: Class<*>): Boolean {
-        val manager = applicationContext.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        for (service in manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.name == service.service.className) {
-                return true
+    private fun isServiceAlive(): Boolean {
+        try {
+            val file = java.io.File(applicationContext.filesDir, "voice_sos_last_alive.bin")
+            if (file.exists()) {
+                val lastAliveStr = file.readText().trim()
+                val lastAlive = lastAliveStr.toLongOrNull() ?: 0L
+                val diff = System.currentTimeMillis() - lastAlive
+                // If the last alive timestamp was updated less than 45 seconds ago, the service is alive and healthy
+                return diff < 45_000L
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to read service heartbeat file", e)
         }
         return false
     }

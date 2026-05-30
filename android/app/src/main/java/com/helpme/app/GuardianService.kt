@@ -42,8 +42,7 @@ class GuardianService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val prefs = getSharedPreferences("helpme_prefs", Context.MODE_PRIVATE)
-        val enabled = prefs.getBoolean("voice_sos_enabled", false)
+        val enabled = VoiceSettings.isVoiceSosEnabled(this)
 
         if (!enabled) {
             stopSelf()
@@ -58,7 +57,7 @@ class GuardianService : Service() {
         if (!isBound) {
             try {
                 val bindIntent = Intent(this, WakeWordService::class.java)
-                bindService(bindIntent, connection, Context.BIND_AUTO_CREATE or Context.BIND_ABOVE_CLIENT)
+                bindService(bindIntent, connection, Context.BIND_AUTO_CREATE)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to bind to WakeWordService", e)
             }

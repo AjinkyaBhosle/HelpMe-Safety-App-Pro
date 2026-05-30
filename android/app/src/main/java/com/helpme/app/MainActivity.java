@@ -23,9 +23,7 @@ public class MainActivity extends BridgeActivity {
             bridge.getWebView().setBackgroundColor(Color.BLACK);
         }
 
-        // Auto-restart WakeWordService if it was enabled (useful when app is re-opened after being killed)
-        android.content.SharedPreferences prefs = getSharedPreferences("helpme_prefs", Context.MODE_PRIVATE);
-        if (prefs.getBoolean("voice_sos_enabled", false)) {
+        if (VoiceSettings.INSTANCE.isVoiceSosEnabled(this)) {
             android.util.Log.d("MainActivity", "Voice SOS is enabled - ensuring WakeWordService is running");
             try {
                 android.content.Intent serviceIntent = new android.content.Intent(this, WakeWordService.class);

@@ -397,6 +397,24 @@ function App() {
     if (Capacitor.getPlatform() !== 'android') return;
 
     try {
+      const bgRestrictedRes = await SmsPlugin.isBackgroundRestricted();
+      if (bgRestrictedRes.restricted) {
+        const bgConfirmRes = await SmsPlugin.showConfirm({
+          title: "Background Action Blocked",
+          message: "⚠️ CRITICAL WARNING:\n\nYour phone has restricted 'Help Me!' from running in the background.\n\nTo fix this and ensure Voice SOS works:\n1. Tap OK to open settings.\n2. Tap 'Battery' or 'Battery usage'.\n3. Select 'Unrestricted' or 'Allow background activity'.",
+          okButton: "Open Settings",
+          cancelButton: "Ignore"
+        });
+        if (bgConfirmRes.value) {
+          await SmsPlugin.openAppSettings();
+          await waitForAppResume();
+        }
+      }
+    } catch (bgRestrictErr) {
+      console.warn("Failed to check background restriction", bgRestrictErr);
+    }
+
+    try {
       const overlayStatus = await SmsPlugin.checkOverlayPermission();
       const hasPromptedOverlay = localStorage.getItem('prompted_overlay');
       if (!overlayStatus.granted || !hasPromptedOverlay) {

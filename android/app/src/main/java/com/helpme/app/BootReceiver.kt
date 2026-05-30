@@ -26,8 +26,7 @@ class BootReceiver : BroadcastReceiver() {
             
             Log.d(TAG, "Device booted — checking if SOS services should restart")
             
-            val prefs = context.getSharedPreferences("helpme_prefs", Context.MODE_PRIVATE)
-            val voiceSosEnabled = prefs.getBoolean("voice_sos_enabled", false)
+            val voiceSosEnabled = VoiceSettings.isVoiceSosEnabled(context)
             
             if (voiceSosEnabled) {
                 Log.d(TAG, "Voice SOS was enabled — Enqueueing BootStart worker")

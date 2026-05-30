@@ -11,8 +11,11 @@ class HeartbeatReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         Log.d(TAG, "Heartbeat AlarmClock triggered! Reviving background services if needed...")
         
-        val prefs = context.getSharedPreferences("helpme_prefs", Context.MODE_PRIVATE)
-        val voiceSosEnabled = prefs.getBoolean("voice_sos_enabled", false)
+        // 1. Reschedule the next heartbeat (self-rescheduling watchdog backup)
+        VoiceSettings.scheduleHeartbeat(context)
+
+        // 2. Check and revive if enabled
+        val voiceSosEnabled = VoiceSettings.isVoiceSosEnabled(context)
 
         if (voiceSosEnabled) {
             try {

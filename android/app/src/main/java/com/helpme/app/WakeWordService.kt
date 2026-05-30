@@ -48,7 +48,7 @@ class WakeWordService : Service(), RecognitionListener {
     private var wakeLock: PowerManager.WakeLock? = null
     private var audioManager: android.media.AudioManager? = null
     private var audioRecordingCallback: Any? = null
-    private var silentPlayer: android.media.MediaPlayer? = null
+
     
     private var telephonyManager: TelephonyManager? = null
     private var telephonyCallback: Any? = null
@@ -59,6 +59,14 @@ class WakeWordService : Service(), RecognitionListener {
     private val watchdogHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private val watchdogRunnable = object : Runnable {
         override fun run() {
+            try {
+                val file = java.io.File(filesDir, "voice_sos_last_alive.bin")
+                java.io.FileOutputStream(file).use { out ->
+                    out.write(System.currentTimeMillis().toString().toByteArray())
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to write last alive timestamp", e)
+            }
             checkWatchdog()
             watchdogHandler.postDelayed(this, 15_000)
         }
@@ -94,7 +102,23 @@ class WakeWordService : Service(), RecognitionListener {
         Log.d(TAG, "WakeWordService Created")
         acquireWakeLock()
         showNotification(ListenerState.STARTING, "Starting microphone...")
-        startSilentAudio()
+        
+        // 1. Initialise the last-alive timestamp file
+        try {
+            val file = java.io.File(filesDir, "voice_sos_last_alive.bin")
+            if (!file.exists()) {
+                file.createNewFile()
+            }
+            java.io.FileOutputStream(file).use { out ->
+                out.write(System.currentTimeMillis().toString().toByteArray())
+            }
+        } catch (e: java.lang.Exception) {
+            Log.e(TAG, "Failed to write initial heartbeat file", e)
+        }
+        
+        // 2. Schedule the heartbeat alarm (runs once on service creation)
+        VoiceSettings.scheduleHeartbeat(this)
+        
         cleanStaleCachedModels()
         initModel()
         watchdogHandler.postDelayed(watchdogRunnable, 15_000)
@@ -167,37 +191,6 @@ class WakeWordService : Service(), RecognitionListener {
         }
     }
 
-    private fun scheduleHeartbeat() {
-        try {
-            val alarmManager = getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
-            
-            val intent = Intent(this, HeartbeatReceiver::class.java)
-            val operationIntent = android.app.PendingIntent.getBroadcast(
-                this, 
-                777, 
-                intent, 
-                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
-            )
-
-            val showIntent = Intent(this, MainActivity::class.java)
-            val pendingShowIntent = android.app.PendingIntent.getActivity(
-                this,
-                778,
-                showIntent,
-                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
-            )
-
-            val sixHoursMs = 6 * 60 * 60 * 1000L
-            val triggerTime = System.currentTimeMillis() + sixHoursMs
-
-            val alarmClockInfo = android.app.AlarmManager.AlarmClockInfo(triggerTime, pendingShowIntent)
-            alarmManager.setAlarmClock(alarmClockInfo, operationIntent)
-            Log.d(TAG, "Heartbeat AlarmClock scheduled for 6 hours from now")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to schedule Heartbeat", e)
-        }
-    }
-
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "WakeWordService Started")
         
@@ -211,8 +204,6 @@ class WakeWordService : Service(), RecognitionListener {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start GuardianService", e)
         }
-        
-        scheduleHeartbeat()
         
         return START_STICKY // Restart if killed by the system
     }
@@ -268,84 +259,7 @@ class WakeWordService : Service(), RecognitionListener {
         super.onTaskRemoved(rootIntent)
     }
 
-    private fun startSilentAudio() {
-        try {
-            val silentFile = java.io.File(cacheDir, "silence.wav")
-            if (!silentFile.exists()) {
-                // Generate a 1-second silent WAV file (8000Hz, Mono, 16-bit)
-                java.io.FileOutputStream(silentFile).use { out ->
-                    val sampleRate = 8000
-                    val channels = 1
-                    val bitsPerSample = 16
-                    val totalAudioLen = sampleRate * channels * (bitsPerSample / 8) // 1 second = 16000 bytes
-                    val totalDataLen = totalAudioLen + 36
-                    val byteRate = sampleRate * channels * bitsPerSample / 8
 
-                    // Write WAV Header
-                    out.write("RIFF".toByteArray()) // ChunkID
-                    out.write(byteArrayOf(
-                        (totalDataLen and 0xff).toByte(),
-                        ((totalDataLen shr 8) and 0xff).toByte(),
-                        ((totalDataLen shr 16) and 0xff).toByte(),
-                        ((totalDataLen shr 24) and 0xff).toByte()
-                    )) // ChunkSize
-                    out.write("WAVE".toByteArray()) // Format
-                    out.write("fmt ".toByteArray()) // Subchunk1ID
-                    out.write(byteArrayOf(16, 0, 0, 0)) // Subchunk1Size (16 for PCM)
-                    out.write(byteArrayOf(1, 0)) // AudioFormat (1 for PCM)
-                    out.write(byteArrayOf(channels.toByte(), 0)) // NumChannels
-                    out.write(byteArrayOf(
-                        (sampleRate and 0xff).toByte(),
-                        ((sampleRate shr 8) and 0xff).toByte(),
-                        ((sampleRate shr 16) and 0xff).toByte(),
-                        ((sampleRate shr 24) and 0xff).toByte()
-                    )) // SampleRate
-                    out.write(byteArrayOf(
-                        (byteRate and 0xff).toByte(),
-                        ((byteRate shr 8) and 0xff).toByte(),
-                        ((byteRate shr 16) and 0xff).toByte(),
-                        ((byteRate shr 24) and 0xff).toByte()
-                    )) // ByteRate
-                    out.write(byteArrayOf((channels * bitsPerSample / 8).toByte(), 0)) // BlockAlign
-                    out.write(byteArrayOf(bitsPerSample.toByte(), 0)) // BitsPerSample
-                    out.write("data".toByteArray()) // Subchunk2ID
-                    out.write(byteArrayOf(
-                        (totalAudioLen and 0xff).toByte(),
-                        ((totalAudioLen shr 8) and 0xff).toByte(),
-                        ((totalAudioLen shr 16) and 0xff).toByte(),
-                        ((totalAudioLen shr 24) and 0xff).toByte()
-                    )) // Subchunk2Size
-
-                    // Write 1 second of silence (zeros)
-                    out.write(ByteArray(totalAudioLen))
-                }
-                Log.d(TAG, "Generated silent WAV file in cache: ${silentFile.absolutePath}")
-            }
-
-            silentPlayer = android.media.MediaPlayer().apply {
-                setDataSource(silentFile.absolutePath)
-                isLooping = true
-                setVolume(0.0f, 0.0f)
-                prepare()
-                start()
-            }
-            Log.d(TAG, "Silent audio player started successfully (looping)")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to start silent audio player", e)
-        }
-    }
-
-    private fun stopSilentAudio() {
-        try {
-            silentPlayer?.stop()
-            silentPlayer?.release()
-            Log.d(TAG, "Silent audio player stopped and released")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to stop silent audio player", e)
-        } finally {
-            silentPlayer = null
-        }
-    }
 
     private fun acquireWakeLock() {
         try {
@@ -698,7 +612,14 @@ class WakeWordService : Service(), RecognitionListener {
         try {
             wakeLock?.release()
         } catch (e: Exception) {}
-        stopSilentAudio()
+        try {
+            val file = java.io.File(filesDir, "voice_sos_last_alive.bin")
+            if (file.exists()) {
+                file.delete()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to delete heartbeat file on destroy", e)
+        }
         Log.d(TAG, "WakeWordService Destroyed")
         
         // Final fallback logic removed to prevent overlapping restart loops 

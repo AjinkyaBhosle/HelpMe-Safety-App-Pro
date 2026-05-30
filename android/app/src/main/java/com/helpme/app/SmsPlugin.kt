@@ -294,7 +294,22 @@ class SmsPlugin : Plugin() {
             } else {
                 context.startService(intent)
             }
-            context.getSharedPreferences("helpme_prefs", Context.MODE_PRIVATE).edit().putBoolean("voice_sos_enabled", true).apply()
+            VoiceSettings.setVoiceSosEnabled(context, true)
+            
+            // Enqueue Periodic Worker immediately on start to ensure safety from day one
+            try {
+                val request = androidx.work.PeriodicWorkRequest.Builder(
+                    VoiceServiceHealthWorker::class.java, 15, java.util.concurrent.TimeUnit.MINUTES
+                ).build()
+                androidx.work.WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                    "voice_sos_health",
+                    androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+                    request
+                )
+            } catch (workEx: Exception) {
+                Log.e("SmsPlugin", "Failed to enqueue periodic health worker", workEx)
+            }
+            
             call.resolve()
         } catch (e: Exception) {
             call.reject("Failed to start voice listener", e)
@@ -306,7 +321,7 @@ class SmsPlugin : Plugin() {
         try {
             val intent = Intent(context, WakeWordService::class.java)
             context.stopService(intent)
-            context.getSharedPreferences("helpme_prefs", Context.MODE_PRIVATE).edit().putBoolean("voice_sos_enabled", false).apply()
+            VoiceSettings.setVoiceSosEnabled(context, false)
             call.resolve()
         } catch (e: Exception) {
             call.reject("Failed to stop voice listener", e)
@@ -320,7 +335,7 @@ class SmsPlugin : Plugin() {
             context.getSharedPreferences("helpme_prefs", Context.MODE_PRIVATE).edit().putString("voice_sos_accent", accent).apply()
             
             // Restart the service if it's currently running so the new model loads
-            val isEnabled = context.getSharedPreferences("helpme_prefs", Context.MODE_PRIVATE).getBoolean("voice_sos_enabled", false)
+            val isEnabled = VoiceSettings.isVoiceSosEnabled(context)
             if (isEnabled) {
                 val intent = Intent(context, WakeWordService::class.java)
                 context.stopService(intent)
@@ -599,6 +614,23 @@ class SmsPlugin : Plugin() {
             }
         } else {
             call.resolve(JSObject().put("bucket", "UNSUPPORTED"))
+        }
+    }
+
+    @PluginMethod
+    fun isBackgroundRestricted(call: PluginCall) {
+        try {
+            val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+            val restricted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                activityManager.isBackgroundRestricted
+            } else {
+                false
+            }
+            val ret = JSObject()
+            ret.put("restricted", restricted)
+            call.resolve(ret)
+        } catch (e: Exception) {
+            call.reject("Failed to check background restriction", e)
         }
     }
 

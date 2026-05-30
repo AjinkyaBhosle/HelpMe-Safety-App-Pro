@@ -21,8 +21,7 @@ class VoiceRestartReceiver : BroadcastReceiver() {
         if (intent.action == "com.ajinkya.helpme.RESTART_VOICE_SOS") {
             Log.d(TAG, "Voice SOS restart requested (e.g., from swipe-away or dismiss)")
 
-            val prefs = context.getSharedPreferences("helpme_prefs", Context.MODE_PRIVATE)
-            val voiceSosEnabled = prefs.getBoolean("voice_sos_enabled", false)
+            val voiceSosEnabled = VoiceSettings.isVoiceSosEnabled(context)
 
             if (!voiceSosEnabled) {
                 Log.d(TAG, "Voice SOS is not enabled — skipping restart")
