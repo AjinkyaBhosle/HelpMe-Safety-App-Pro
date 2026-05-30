@@ -57,19 +57,29 @@ class GuardianService : Service() {
         if (!isBound) {
             try {
                 val bindIntent = Intent(this, WakeWordService::class.java)
+                // Start as a foreground service first to ensure foreground privileges (like mic access)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(bindIntent)
+                } else {
+                    startService(bindIntent)
+                }
                 bindService(bindIntent, connection, Context.BIND_AUTO_CREATE)
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to bind to WakeWordService", e)
+                Log.e(TAG, "Failed to start/bind to WakeWordService", e)
             }
         }
     }
 
     private fun reviveMainProcess() {
-        Log.d(TAG, "Attempting to instantly revive WakeWordService...")
+        Log.d(TAG, "Attempting to instantly revive WakeWordService in the foreground...")
         try {
-            val restartIntent = Intent(this, VoiceRestartReceiver::class.java)
-            restartIntent.action = "com.ajinkya.helpme.RESTART_VOICE_SOS"
-            sendBroadcast(restartIntent)
+            val restartIntent = Intent(this, WakeWordService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(restartIntent)
+            } else {
+                startService(restartIntent)
+            }
+            Log.d(TAG, "Instantly revived WakeWordService directly in the foreground")
             
             // Attempt to re-bind shortly after revival
             val handler = android.os.Handler(android.os.Looper.getMainLooper())
@@ -77,7 +87,14 @@ class GuardianService : Service() {
                 bindToMainService()
             }, 3000)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to revive main process", e)
+            Log.e(TAG, "Failed to revive WakeWordService directly, falling back to broadcast", e)
+            try {
+                val restartIntent = Intent(this, VoiceRestartReceiver::class.java)
+                restartIntent.action = "com.ajinkya.helpme.RESTART_VOICE_SOS"
+                sendBroadcast(restartIntent)
+            } catch (ex: Exception) {
+                Log.e(TAG, "Failed to send backup restart broadcast", ex)
+            }
         }
     }
 

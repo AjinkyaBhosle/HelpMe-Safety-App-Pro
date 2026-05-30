@@ -29,15 +29,26 @@ class BootReceiver : BroadcastReceiver() {
             val voiceSosEnabled = VoiceSettings.isVoiceSosEnabled(context)
             
             if (voiceSosEnabled) {
-                Log.d(TAG, "Voice SOS was enabled — Enqueueing BootStart worker")
+                Log.d(TAG, "Voice SOS was enabled — starting WakeWordService directly on boot")
                 try {
-                    val request = OneTimeWorkRequest.Builder(VoiceServiceHealthWorker::class.java)
-                        .setInitialDelay(10, TimeUnit.SECONDS) // Delay to let system settle
-                        .addTag("BOOT_VOICE_RESTART")
-                        .build()
-                    WorkManager.getInstance(context).enqueue(request)
+                    val serviceIntent = Intent(context, WakeWordService::class.java)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        context.startForegroundService(serviceIntent)
+                    } else {
+                        context.startService(serviceIntent)
+                    }
+                    Log.d(TAG, "Successfully started WakeWordService directly from BootReceiver")
                 } catch (e: Exception) {
-                    Log.e(TAG, "Failed to enqueue VoiceServiceHealthWorker", e)
+                    Log.e(TAG, "Failed to start WakeWordService directly on boot, falling back to WorkManager: ${e.message}")
+                    try {
+                        val request = OneTimeWorkRequest.Builder(VoiceServiceHealthWorker::class.java)
+                            .setInitialDelay(10, TimeUnit.SECONDS) // Delay to let system settle
+                            .addTag("BOOT_VOICE_RESTART")
+                            .build()
+                        WorkManager.getInstance(context).enqueue(request)
+                    } catch (workEx: Exception) {
+                        Log.e(TAG, "Failed to enqueue fallback VoiceServiceHealthWorker", workEx)
+                    }
                 }
             }
             
