@@ -10,7 +10,7 @@ import androidx.work.WorkManager
 import java.util.concurrent.TimeUnit
 
 /**
- * Automatically restarts the WakeWordService and ShakeSensorService after a device reboot,
+ * Automatically restarts the WakeWordService after a device reboot,
  * if the user had previously enabled them.
  */
 class BootReceiver : BroadcastReceiver() {
