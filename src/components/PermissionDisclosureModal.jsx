@@ -134,14 +134,14 @@ const PermissionDisclosureModal = ({ isOpen, onAccept }) => {
                                     </div>
                                     <div className="p-3">
                                         <p className="font-semibold text-amber-400 mb-1 flex items-center gap-1.5"><span className="text-amber-500">⑤</span> Prevent App from Sleeping</p>
-                                        <p className="text-zinc-300 ml-5 leading-relaxed"><b>Why:</b> Phones will quietly kill apps while you aren't looking to save battery. This breaks the SOS microphone.</p>
+                                        <p className="text-zinc-300 ml-5 leading-relaxed"><b>Why:</b> Your phone will naturally try to put this app to sleep to save battery, which will stop the active listening microphone.</p>
                                         <p className="text-zinc-300 ml-5 mt-2 font-bold">How to fix this in 3 easy steps:</p>
                                         <ol className="list-decimal ml-9 mt-1 mb-1 space-y-1.5 text-zinc-300 text-[11px]">
                                             <li>Leave this app open on your screen.</li>
-                                            <li>Open your phone's <b>Recent Apps</b> screen (where you see all your open apps side-by-side).</li>
-                                            <li>Tap the <b>3 dots</b> above the Help Me! app (or swipe down on it) and tap <b>Lock (🔒)</b>.</li>
+                                            <li>Open your phone's Recent Apps screen by swiping up from the bottom of your screen.</li>
+                                            <li>Tap the 3 dots above the Help Me! app (or swipe down on it) and tap Lock (🔒).</li>
                                         </ol>
-                                        <p className="text-emerald-400 ml-5 mt-1.5 italic text-[10px]">A tiny padlock will appear! Now your phone will never break the SOS microphone.</p>
+                                        <p className="text-emerald-400 ml-5 mt-1.5 italic text-[10px]">A tiny 🔒 padlock will appear! Now your phone will never break the SOS microphone.</p>
                                     </div>
                                 </div>
                                 <div className="mt-2 p-2.5 bg-blue-900/20 border border-blue-800/40 rounded-lg">
