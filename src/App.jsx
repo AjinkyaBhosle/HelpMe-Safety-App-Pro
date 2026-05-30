@@ -101,7 +101,7 @@ const InfoView = ({ onClose }) => (
           <li><b>Formatting:</b> Plain local digits (e.g., 5551234567) and full international codes (e.g., +15551234567) both work.</li>
           <li><b>Priority:</b> Add a trusted personal contact as your <b>first</b> number. Android blocks automated calls to official emergency numbers (911/100), so placing a personal number first ensures auto-dial works seamlessly.</li>
           <li><b>Panic:</b> Tap the big red button (or use Voice SOS / Shake-to-SOS) to trigger the alerts.</li>
-          <li><b>Shake-to-SOS Note:</b> If enabled, please disable any built-in OS "Shake to launch" gestures (like Flashlight or Camera) in your phone's main settings to avoid conflicts.</li>
+          <li><b>Shake-to-SOS Note:</b> If enabled, please disable any built-in OS "Shake to launch" features (like Flashlight or Camera) in your phone's main settings to avoid conflicts. Search for 'Shake', 'Gesture', or 'Motion' to find them.</li>
         </ul>
       </section>
 
