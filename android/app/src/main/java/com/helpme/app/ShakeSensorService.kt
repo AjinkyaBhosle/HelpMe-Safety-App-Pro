@@ -28,8 +28,8 @@ class ShakeSensorService : Service(), SensorEventListener {
     private var wakeLock: PowerManager.WakeLock? = null
 
     // Shake detection parameters
-    private val SHAKE_THRESHOLD_GRAVITY = 5.0f
-    private val SHAKE_SLOP_TIME_MS = 400
+    private val SHAKE_THRESHOLD_GRAVITY = 3.5f
+    private val SHAKE_SLOP_TIME_MS = 300
     private val SHAKE_COUNT_RESET_TIME_MS = 3000
     private val SHAKE_MIN_COUNT = 2
 
