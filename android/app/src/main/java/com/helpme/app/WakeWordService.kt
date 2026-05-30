@@ -170,11 +170,6 @@ class WakeWordService : Service(), RecognitionListener {
         return START_STICKY // Restart if killed by the system
     }
 
-    /**
-     * CRITICAL: When the system kills and restarts the service via START_STICKY,
-     * onTaskRemoved is called first. We must NOT stop the service here.
-     * Instead, we ensure the service survives the app swipe.
-     */
     override fun onTaskRemoved(rootIntent: Intent?) {
         Log.d(TAG, "App swiped away — WakeWordService attempting aggressive restart")
         
@@ -183,6 +178,10 @@ class WakeWordService : Service(), RecognitionListener {
             val restartIntent = Intent(applicationContext, VoiceRestartReceiver::class.java)
             restartIntent.action = "com.ajinkya.helpme.RESTART_VOICE_SOS"
             
+            // 1. Immediate Broadcast (Shotgun approach layer 1)
+            sendBroadcast(restartIntent)
+            
+            // 2. Scheduled Alarm Backup (Shotgun approach layer 2)
             val pendingIntent = PendingIntent.getBroadcast(
                 applicationContext,
                 1,
@@ -196,21 +195,21 @@ class WakeWordService : Service(), RecognitionListener {
                 try {
                     alarmManager.setExactAndAllowWhileIdle(
                         android.app.AlarmManager.ELAPSED_REALTIME_WAKEUP,
-                        android.os.SystemClock.elapsedRealtime() + 3000,
+                        android.os.SystemClock.elapsedRealtime() + 1000,
                         pendingIntent
                     )
                 } catch (se: SecurityException) {
                     Log.w(TAG, "Exact alarm permission denied. Falling back to inexact alarm.")
                     alarmManager.setAndAllowWhileIdle(
                         android.app.AlarmManager.ELAPSED_REALTIME_WAKEUP,
-                        android.os.SystemClock.elapsedRealtime() + 3000,
+                        android.os.SystemClock.elapsedRealtime() + 1000,
                         pendingIntent
                     )
                 }
             } else {
                 alarmManager.set(
                     android.app.AlarmManager.ELAPSED_REALTIME_WAKEUP,
-                    android.os.SystemClock.elapsedRealtime() + 3000,
+                    android.os.SystemClock.elapsedRealtime() + 1000,
                     pendingIntent
                 )
             }
