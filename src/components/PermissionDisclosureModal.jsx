@@ -134,8 +134,8 @@ const PermissionDisclosureModal = ({ isOpen, onAccept }) => {
                                     </div>
                                     <div className="p-3">
                                         <p className="font-semibold text-amber-400 mb-1 flex items-center gap-1.5"><span className="text-amber-500">⑤</span> Prevent App from Sleeping</p>
-                                        <p className="text-zinc-300 ml-5"><b>Why:</b> Your phone will naturally try to put this app to sleep to save battery, which will break the SOS microphone.</p>
-                                        <p className="text-zinc-300 ml-5 mt-1"><b>How:</b> Swipe up to view your open apps, tap the 3 dots on the Help Me! card (or swipe down on it), and select <b>Lock (🔒)</b>. This forces your phone to keep the SOS active.</p>
+                                        <p className="text-zinc-300 ml-5"><b>Why:</b> Your phone will naturally try to put this app to sleep to save battery, which will stop the active listening microphone.</p>
+                                        <p className="text-zinc-300 ml-5 mt-1"><b>How:</b> Open this app, then swipe up from the bottom of your screen to view your open/recent apps. Tap the 3 dots at the top of the Help Me! card (or swipe down on the card itself), and select <b>Lock (🔒)</b>. This forces your phone to keep the SOS active.</p>
                                     </div>
                                 </div>
                                 <div className="mt-2 p-2.5 bg-blue-900/20 border border-blue-800/40 rounded-lg">
