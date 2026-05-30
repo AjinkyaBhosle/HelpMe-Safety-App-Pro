@@ -134,7 +134,7 @@ const PermissionDisclosureModal = ({ isOpen, onAccept }) => {
                                     </div>
                                     <div className="p-3">
                                         <p className="font-semibold text-amber-400 mb-1 flex items-center gap-1.5"><span className="text-amber-500">⑤</span> Prevent App from Sleeping</p>
-                                        <p className="text-zinc-300 ml-5 mt-2 leading-relaxed">
+                                        <p className="text-zinc-300 ml-5 mt-4 leading-relaxed">
                                             <b>Why:</b><br />
                                             Your phone will naturally try to put this app to sleep to save battery, which will stop the active listening microphone.
                                         </p>
