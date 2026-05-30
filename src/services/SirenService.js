@@ -46,7 +46,6 @@ class SirenService {
             case 'whistle':
             case 'dog':
             case 'scream':
-            case 'carhorn':
                 this.playAsset(type);
                 break;
             default:
