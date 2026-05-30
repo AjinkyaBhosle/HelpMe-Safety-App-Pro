@@ -14,6 +14,9 @@ import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
+import android.telephony.TelephonyManager
+import android.telephony.PhoneStateListener
+import android.telephony.TelephonyCallback
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.work.OneTimeWorkRequest
@@ -32,7 +35,8 @@ enum class ListenerState {
     ACTIVE,
     STALLED,
     RESTARTING,
-    FAILED
+    FAILED,
+    PAUSED
 }
 
 class WakeWordService : Service(), RecognitionListener {
@@ -45,13 +49,17 @@ class WakeWordService : Service(), RecognitionListener {
     private var audioManager: android.media.AudioManager? = null
     private var audioRecordingCallback: Any? = null
     
+    private var telephonyManager: TelephonyManager? = null
+    private var telephonyCallback: Any? = null
+    private var phoneStateListener: PhoneStateListener? = null
+    
     private var currentState = ListenerState.STARTING
     private var lastAudioTime = 0L
     private val watchdogHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private val watchdogRunnable = object : Runnable {
         override fun run() {
             checkWatchdog()
-            watchdogHandler.postDelayed(this, 30_000)
+            watchdogHandler.postDelayed(this, 15_000)
         }
     }
     
@@ -87,7 +95,8 @@ class WakeWordService : Service(), RecognitionListener {
         showNotification(ListenerState.STARTING, "Starting microphone...")
         cleanStaleCachedModels()
         initModel()
-        watchdogHandler.postDelayed(watchdogRunnable, 30_000)
+        watchdogHandler.postDelayed(watchdogRunnable, 15_000)
+        registerPhoneListener()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             audioManager = getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
@@ -106,6 +115,53 @@ class WakeWordService : Service(), RecognitionListener {
                 audioRecordingCallback as android.media.AudioManager.AudioRecordingCallback,
                 null
             )
+        }
+    }
+
+    private fun registerPhoneListener() {
+        try {
+            telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                telephonyCallback = object : TelephonyCallback(), TelephonyCallback.CallStateListener {
+                    override fun onCallStateChanged(state: Int) {
+                        handleCallState(state)
+                    }
+                }
+                telephonyManager?.registerTelephonyCallback(
+                    mainExecutor,
+                    telephonyCallback as TelephonyCallback
+                )
+            } else {
+                phoneStateListener = object : PhoneStateListener() {
+                    override fun onCallStateChanged(state: Int, phoneNumber: String?) {
+                        handleCallState(state)
+                    }
+                }
+                telephonyManager?.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE)
+            }
+        } catch (e: SecurityException) {
+            Log.w(TAG, "Missing READ_PHONE_STATE permission for telephony listener")
+        }
+    }
+
+    private fun handleCallState(state: Int) {
+        when (state) {
+            TelephonyManager.CALL_STATE_OFFHOOK, TelephonyManager.CALL_STATE_RINGING -> {
+                Log.d(TAG, "Phone call active - pausing Voice SOS")
+                showNotification(ListenerState.PAUSED, "Paused (mic busy with phone call)")
+                try {
+                    speechService?.stop()
+                    speechService?.shutdown()
+                } catch (e: Exception) {}
+                speechService = null
+            }
+            TelephonyManager.CALL_STATE_IDLE -> {
+                Log.d(TAG, "Phone call ended - resuming Voice SOS")
+                if (model != null && currentState == ListenerState.PAUSED) {
+                    val handler = android.os.Handler(android.os.Looper.getMainLooper())
+                    handler.postDelayed({ startListening() }, 2000)
+                }
+            }
         }
     }
 
@@ -231,7 +287,7 @@ class WakeWordService : Service(), RecognitionListener {
     private fun checkWatchdog() {
         if (lastAudioTime == 0L) return // Not yet received any audio
         val elapsed = System.currentTimeMillis() - lastAudioTime
-        if (elapsed > 60_000L) {
+        if (elapsed > 30_000L) {
             Log.w(TAG, "Watchdog detected silent audio freeze (no frames in ${elapsed}ms). Restarting recognizer!")
             showNotification(ListenerState.STALLED, "Recognizer stalled — recovering...")
             startListening()
@@ -292,14 +348,31 @@ class WakeWordService : Service(), RecognitionListener {
             val srcPath = "$assetPath/$asset"
             val destFile = java.io.File(targetDir, asset)
             
-            val subAssets = this.assets.list(srcPath)
-            if (subAssets != null && subAssets.isNotEmpty()) {
+            var isDir = false
+            try {
+                this.assets.open(srcPath).use { it.close() }
+            } catch (e: java.io.FileNotFoundException) {
+                isDir = true
+            }
+            
+            if (isDir) {
                 copyAssets(srcPath, destFile)
             } else {
+                val handler = android.os.Handler(android.os.Looper.getMainLooper())
+                handler.post {
+                    showNotification(ListenerState.STARTING, "Loading model... ($asset)")
+                }
+                
+                var expectedSize = -1L
                 this.assets.open(srcPath).use { inputStream ->
+                    expectedSize = inputStream.available().toLong()
                     java.io.FileOutputStream(destFile).use { outputStream ->
                         inputStream.copyTo(outputStream)
                     }
+                }
+                
+                if (expectedSize != -1L && destFile.length() != expectedSize) {
+                    throw IOException("Failed to copy $srcPath: expected $expectedSize bytes, got ${destFile.length()}")
                 }
             }
         }
@@ -474,6 +547,16 @@ class WakeWordService : Service(), RecognitionListener {
     override fun onDestroy() {
         super.onDestroy()
         watchdogHandler.removeCallbacks(watchdogRunnable)
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            telephonyCallback?.let {
+                telephonyManager?.unregisterTelephonyCallback(it as TelephonyCallback)
+            }
+        } else {
+            phoneStateListener?.let {
+                telephonyManager?.listen(it, PhoneStateListener.LISTEN_NONE)
+            }
+        }
         
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             audioRecordingCallback?.let {
