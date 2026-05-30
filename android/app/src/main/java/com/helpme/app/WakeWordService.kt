@@ -364,9 +364,12 @@ class WakeWordService : Service(), RecognitionListener {
         // ── Defense Layer 3: Audio Energy Gate (REMOVED) ──
 
         // ── Defense Layer 4: Phrase Match (Fuzzy Matching) ──
+        // Covers US-model outputs: "help me", "halp me", "elp me"
+        // Covers IN-model outputs: "help mi", "halp mi", "hep me", "hilp me", "help mee"
         val cleaned = text.lowercase()
-        val regex = Regex("h[e|a|o]?l?p\\s?m[e|i]|elp me")
-        if (!regex.containsMatchIn(cleaned) && !cleaned.contains("help me")) {
+        val regex = Regex("h[eaoi]?l?p\\s?m[eiy]|elp\\s?m[eiy]")
+        val exactMatches = listOf("help me", "help mi", "halp me", "halp mi", "hep me", "hep mi", "hilp me", "hilp mi")
+        if (!regex.containsMatchIn(cleaned) && exactMatches.none { cleaned.contains(it) }) {
             Log.d(TAG, "Ignored (no fuzzy trigger match: '$cleaned')")
             return
         }
