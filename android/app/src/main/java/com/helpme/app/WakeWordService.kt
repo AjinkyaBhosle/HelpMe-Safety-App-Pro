@@ -240,18 +240,22 @@ class WakeWordService : Service(), RecognitionListener {
     private fun initModel() {
         val prefs = getSharedPreferences("helpme_prefs", Context.MODE_PRIVATE)
         val accent = prefs.getString("voice_sos_accent", "us") ?: "us"
+        val accentLabel = if (accent == "in") "Indian" else "US"
         val assetPath = if (accent == "in") "vosk-model-in" else "vosk-model-us"
         val targetPath = if (accent == "in") "model-in" else "model-us"
         
         Log.d(TAG, "Unpacking Vosk Model ($accent)...")
+        showNotification(ListenerState.STARTING, "Loading $accentLabel English model...")
         StorageService.unpack(this, assetPath, targetPath,
             { model: Model? ->
                 this.model = model
                 Log.d(TAG, "Vosk model ($accent) loaded successfully")
+                showNotification(ListenerState.STARTING, "Model ready — opening microphone...")
                 startListening()
             },
             { exception: IOException ->
                 Log.e(TAG, "Failed to unpack model", exception)
+                showNotification(ListenerState.FAILED, "Model load failed — restart Voice SOS")
                 try {
                     wakeLock?.release()
                 } catch (e: Exception) {}
@@ -311,10 +315,16 @@ class WakeWordService : Service(), RecognitionListener {
         }
     }
 
+    private fun getActiveAccentLabel(): String {
+        val prefs = getSharedPreferences("helpme_prefs", Context.MODE_PRIVATE)
+        val accent = prefs.getString("voice_sos_accent", "us") ?: "us"
+        return if (accent == "in") "Indian" else "US"
+    }
+
     override fun onPartialResult(hypothesis: String) {
         lastAudioTime = System.currentTimeMillis()
         if (currentState != ListenerState.ACTIVE) {
-            showNotification(ListenerState.ACTIVE, "Listening active")
+            showNotification(ListenerState.ACTIVE, "Listening (${getActiveAccentLabel()} English)")
         }
         val text = extractText(hypothesis)
         if (text.isEmpty() || text == "[unk]") return
@@ -326,7 +336,7 @@ class WakeWordService : Service(), RecognitionListener {
     override fun onResult(hypothesis: String) {
         lastAudioTime = System.currentTimeMillis()
         if (currentState != ListenerState.ACTIVE) {
-            showNotification(ListenerState.ACTIVE, "Listening active")
+            showNotification(ListenerState.ACTIVE, "Listening (${getActiveAccentLabel()} English)")
         }
         val text = extractText(hypothesis)
         if (text.isEmpty() || text == "[unk]") return
@@ -338,7 +348,7 @@ class WakeWordService : Service(), RecognitionListener {
     override fun onFinalResult(hypothesis: String) {
         lastAudioTime = System.currentTimeMillis()
         if (currentState != ListenerState.ACTIVE) {
-            showNotification(ListenerState.ACTIVE, "Listening active")
+            showNotification(ListenerState.ACTIVE, "Listening (${getActiveAccentLabel()} English)")
         }
         val text = extractText(hypothesis)
         if (text.isEmpty() || text == "[unk]") return
