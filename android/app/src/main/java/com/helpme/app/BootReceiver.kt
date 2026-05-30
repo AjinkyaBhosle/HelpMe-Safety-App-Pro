@@ -46,6 +46,24 @@ class BootReceiver : BroadcastReceiver() {
             } else {
                 Log.d(TAG, "Voice SOS was not enabled — skipping restart")
             }
+
+            val shakeSosEnabled = prefs.getBoolean("shake_sos_enabled", false)
+            if (shakeSosEnabled) {
+                Log.d(TAG, "Shake SOS was enabled — scheduling ShakeSensorService restart in 15 seconds")
+                Handler(Looper.getMainLooper()).postDelayed({
+                    try {
+                        val serviceIntent = Intent(context, ShakeSensorService::class.java)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            context.startForegroundService(serviceIntent)
+                        } else {
+                            context.startService(serviceIntent)
+                        }
+                        Log.d(TAG, "ShakeSensorService restart initiated successfully")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to restart ShakeSensorService after boot", e)
+                    }
+                }, 15000)
+            }
         }
     }
 }

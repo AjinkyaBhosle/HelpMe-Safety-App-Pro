@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserCog, History, Info, X, Flashlight, Siren, Mic, Settings, Shield, Video, Timer, Sparkles, AlertTriangle, HelpCircle } from 'lucide-react';
+import { UserCog, History, Info, X, Flashlight, Siren, Mic, Settings, Shield, Video, Timer, Sparkles, AlertTriangle, HelpCircle, Activity } from 'lucide-react';
 
 const HumanHeadSpeaking = ({ size = 24, className = "", ...props }) => (
     <svg 
@@ -31,6 +31,7 @@ const SmsPlugin = registerPlugin('SmsPlugin');
 const SettingsMenu = ({ isOpen, onClose, onNavigate, isPro, onUpgradeRequest }) => {
     const [isStrobing, setIsStrobing] = useState(false);
     const [isVoiceActive, setIsVoiceActive] = useState(localStorage.getItem('voiceActivation') === 'true');
+    const [isShakeActive, setIsShakeActive] = useState(localStorage.getItem('shakeActivation') === 'true');
     const [showSoundSelector, setShowSoundSelector] = useState(false);
     const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
     const [showCheckIn, setShowCheckIn] = useState(false);
@@ -51,6 +52,13 @@ const SettingsMenu = ({ isOpen, onClose, onNavigate, isPro, onUpgradeRequest }) 
             description: 'Add personal info (Optional)',
             action: 'profile',
             color: 'text-purple-400'
+        },
+        {
+            icon: Activity,
+            label: 'Shake-to-SOS',
+            description: 'Shake phone vigorously to trigger',
+            action: 'shake',
+            color: isShakeActive ? 'text-green-500' : 'text-zinc-400'
         },
         {
             icon: Flashlight,
@@ -169,6 +177,23 @@ const SettingsMenu = ({ isOpen, onClose, onNavigate, isPro, onUpgradeRequest }) 
             return;
         }
 
+        if (action === 'shake') {
+            hapticService.medium();
+            const newState = !isShakeActive;
+            setIsShakeActive(newState);
+            localStorage.setItem('shakeActivation', newState);
+            try {
+                if (newState) {
+                    await SmsPlugin.startShakeListener();
+                } else {
+                    await SmsPlugin.stopShakeListener();
+                }
+            } catch (e) {
+                console.error("Failed to toggle shake listener", e);
+            }
+            return;
+        }
+
         // Delegating all navigation-based actions to parent
         hapticService.light();
         onNavigate(action);
@@ -233,6 +258,16 @@ const SettingsMenu = ({ isOpen, onClose, onNavigate, isPro, onUpgradeRequest }) 
                                                         {item.description}
                                                     </p>
                                                 </div>
+                                                {item.action === 'shake' && (
+                                                    <div className={`w-11 h-6 rounded-full p-1 shrink-0 transition-colors flex items-center ${isShakeActive ? 'bg-green-500' : 'bg-zinc-700'}`}>
+                                                        <div className={`w-4 h-4 bg-white rounded-full transition-transform ${isShakeActive ? 'translate-x-5' : 'translate-x-0'}`} />
+                                                    </div>
+                                                )}
+                                                {item.action === 'flashlight' && (
+                                                    <div className={`w-11 h-6 rounded-full p-1 shrink-0 transition-colors flex items-center ${isStrobing ? 'bg-red-500' : 'bg-zinc-700'}`}>
+                                                        <div className={`w-4 h-4 bg-white rounded-full transition-transform ${isStrobing ? 'translate-x-5' : 'translate-x-0'}`} />
+                                                    </div>
+                                                )}
                                             </button>
                                         );
                                     })}

@@ -79,6 +79,13 @@
             android:stopWithTask="false"
             android:exported="false" />
             
+        <!-- Shake-to-SOS Sensor Service -->
+        <service
+            android:name=".ShakeSensorService"
+            android:foregroundServiceType="location"
+            android:stopWithTask="false"
+            android:exported="false" />
+            
         <receiver
             android:name=".VoiceRestartReceiver"
             android:enabled="true"

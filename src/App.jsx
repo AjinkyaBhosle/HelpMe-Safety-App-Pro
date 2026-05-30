@@ -282,11 +282,11 @@ function App() {
 
         // 5. Start Voice Listener if enabled
         if (localStorage.getItem('voiceActivation') === 'true') {
-          try {
-            await SmsPlugin.startVoiceListener();
-          } catch (e) {
-            console.warn("Failed to auto-start voice listener", e);
-          }
+          SmsPlugin.startVoiceListener().catch(e => console.warn("Auto-start voice failed", e));
+        }
+
+        if (localStorage.getItem('shakeActivation') === 'true') {
+          SmsPlugin.startShakeListener().catch(e => console.warn("Auto-start shake failed", e));
         }
 
       } catch (err) {
