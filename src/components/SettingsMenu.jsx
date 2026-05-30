@@ -186,17 +186,17 @@ const SettingsMenu = ({ isOpen, onClose, onNavigate, isPro, onUpgradeRequest }) 
                 if (newState) {
                     await SmsPlugin.startShakeListener();
                     
-                    const hasPromptedShakeTorch = localStorage.getItem('prompted_shake_torch');
+                    const hasPromptedShakeTorch = localStorage.getItem('prompted_shake_gesture');
                     if (!hasPromptedShakeTorch) {
                         const shakeTorchRes = await SmsPlugin.showConfirm({
                             title: "Disable OS Shake Gestures",
                             message: "To ensure Shake-to-SOS works flawlessly, you must disable any OS-level 'Shake to launch' features (like Shake for Flashlight or Camera).\n\nTap OK to open Settings, then search for 'Shake' and set the gesture to 'None'."
                         });
                         if (shakeTorchRes.value) {
-                            localStorage.setItem('prompted_shake_torch', 'true');
+                            localStorage.setItem('prompted_shake_gesture', 'true');
                             await SmsPlugin.openMainSettings();
                         } else {
-                            localStorage.setItem('prompted_shake_torch', 'true');
+                            localStorage.setItem('prompted_shake_gesture', 'true');
                         }
                     }
                 } else {
