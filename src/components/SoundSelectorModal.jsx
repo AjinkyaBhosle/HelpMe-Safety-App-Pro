@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, X, Siren, Bell, Mic, Dog, Skull, Car } from 'lucide-react';
+import { Settings, X, Siren, Bell, Mic, Dog, Skull } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { sirenService } from '../services/SirenService';
 import { hapticService } from '../services/HapticService';
@@ -47,7 +47,6 @@ const soundOptions = [
     { id: 'alarm', label: 'Alarm', icon: Bell, color: 'text-red-500', hex: '#ef4444' },
     { id: 'dog', label: 'Dog Bark', icon: Dog, color: 'text-orange-500', hex: '#f97316' },
     { id: 'whistle', label: 'Whistle', icon: WhistleIcon, color: 'text-yellow-500', hex: '#eab308' },
-    { id: 'carhorn', label: 'Car Horn', icon: Car, color: 'text-indigo-500', hex: '#6366f1' },
     { id: 'scream', label: 'Scream', icon: Skull, color: 'text-purple-500', hex: '#a855f7' }
 ];
 

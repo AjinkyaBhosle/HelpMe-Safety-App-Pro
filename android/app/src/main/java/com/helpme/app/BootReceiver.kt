@@ -28,7 +28,6 @@ class BootReceiver : BroadcastReceiver() {
             
             val prefs = context.getSharedPreferences("helpme_prefs", Context.MODE_PRIVATE)
             val voiceSosEnabled = prefs.getBoolean("voice_sos_enabled", false)
-            val shakeSosEnabled = prefs.getBoolean("shake_sos_enabled", false)
             
             if (voiceSosEnabled) {
                 Log.d(TAG, "Voice SOS was enabled — Enqueueing BootStart worker")
@@ -43,18 +42,7 @@ class BootReceiver : BroadcastReceiver() {
                 }
             }
             
-            if (shakeSosEnabled) {
-                Log.d(TAG, "Shake SOS was enabled — Enqueueing BootStart worker")
-                try {
-                    val request = OneTimeWorkRequest.Builder(ShakeServiceHealthWorker::class.java)
-                        .setInitialDelay(5, TimeUnit.SECONDS)
-                        .addTag("BOOT_SHAKE_RESTART")
-                        .build()
-                    WorkManager.getInstance(context).enqueue(request)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to enqueue ShakeServiceHealthWorker", e)
-                }
-            }
+
         }
     }
 }

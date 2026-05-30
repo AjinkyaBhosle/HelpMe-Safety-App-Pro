@@ -31,7 +31,6 @@ const SmsPlugin = registerPlugin('SmsPlugin');
 const SettingsMenu = ({ isOpen, onClose, onNavigate, isPro, onUpgradeRequest }) => {
     const [isStrobing, setIsStrobing] = useState(false);
     const [isVoiceActive, setIsVoiceActive] = useState(localStorage.getItem('voiceActivation') === 'true');
-    const [isShakeActive, setIsShakeActive] = useState(localStorage.getItem('shakeActivation') === 'true');
     const [showSoundSelector, setShowSoundSelector] = useState(false);
     const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
     const [showCheckIn, setShowCheckIn] = useState(false);
@@ -53,13 +52,7 @@ const SettingsMenu = ({ isOpen, onClose, onNavigate, isPro, onUpgradeRequest }) 
             action: 'profile',
             color: 'text-purple-400'
         },
-        {
-            icon: Activity,
-            label: 'Shake-to-SOS',
-            description: 'Shake phone vigorously to trigger',
-            action: 'shake',
-            color: isShakeActive ? 'text-green-500' : 'text-zinc-400'
-        },
+
         {
             icon: Flashlight,
             label: isStrobing ? 'Stop SOS Flash' : 'SOS Flashlight',
@@ -177,30 +170,7 @@ const SettingsMenu = ({ isOpen, onClose, onNavigate, isPro, onUpgradeRequest }) 
             return;
         }
 
-        if (action === 'shake') {
-            hapticService.medium();
-            const newState = !isShakeActive;
-            setIsShakeActive(newState);
-            localStorage.setItem('shakeActivation', newState);
-            try {
-                if (newState) {
-                    await SmsPlugin.startShakeListener();
-                    
-                    const shakeTorchRes = await SmsPlugin.showConfirm({
-                        title: "Disable OS Shake Gestures",
-                        message: "To ensure Shake-to-SOS works flawlessly, you must disable any OS-level 'Shake to launch' features (like Shake for Torch or Camera).\n\nTap OK to open Settings, then search for 'Shake', 'Gesture', or 'Motion' and set the feature to 'None'."
-                    });
-                    if (shakeTorchRes.value) {
-                        await SmsPlugin.openMainSettings();
-                    }
-                } else {
-                    await SmsPlugin.stopShakeListener();
-                }
-            } catch (e) {
-                console.error("Failed to toggle shake listener", e);
-            }
-            return;
-        }
+
 
         // Delegating all navigation-based actions to parent
         hapticService.light();
@@ -266,11 +236,7 @@ const SettingsMenu = ({ isOpen, onClose, onNavigate, isPro, onUpgradeRequest }) 
                                                         {item.description}
                                                     </p>
                                                 </div>
-                                                {item.action === 'shake' && (
-                                                    <div className={`w-11 h-6 rounded-full p-1 shrink-0 transition-colors flex items-center ${isShakeActive ? 'bg-green-500' : 'bg-zinc-700'}`}>
-                                                        <div className={`w-4 h-4 bg-white rounded-full transition-transform ${isShakeActive ? 'translate-x-5' : 'translate-x-0'}`} />
-                                                    </div>
-                                                )}
+
                                                 {item.action === 'flashlight' && (
                                                     <div className={`w-11 h-6 rounded-full p-1 shrink-0 transition-colors flex items-center ${isStrobing ? 'bg-red-500' : 'bg-zinc-700'}`}>
                                                         <div className={`w-4 h-4 bg-white rounded-full transition-transform ${isStrobing ? 'translate-x-5' : 'translate-x-0'}`} />

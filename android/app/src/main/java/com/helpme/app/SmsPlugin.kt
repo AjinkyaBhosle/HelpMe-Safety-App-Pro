@@ -313,42 +313,7 @@ class SmsPlugin : Plugin() {
         }
     }
 
-    @PluginMethod
-    fun startShakeListener(call: PluginCall) {
-        try {
-            val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as android.hardware.SensorManager
-            val linear = sensorManager.getDefaultSensor(android.hardware.Sensor.TYPE_LINEAR_ACCELERATION)
-            val acc = sensorManager.getDefaultSensor(android.hardware.Sensor.TYPE_ACCELEROMETER)
-            
-            if (linear == null && acc == null) {
-                call.reject("Device does not support motion sensors.")
-                return
-            }
 
-            val intent = Intent(context, ShakeSensorService::class.java)
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                context.startForegroundService(intent)
-            } else {
-                context.startService(intent)
-            }
-            context.getSharedPreferences("helpme_prefs", Context.MODE_PRIVATE).edit().putBoolean("shake_sos_enabled", true).apply()
-            call.resolve()
-        } catch (e: Exception) {
-            call.reject("Failed to start shake listener", e)
-        }
-    }
-
-    @PluginMethod
-    fun stopShakeListener(call: PluginCall) {
-        try {
-            val intent = Intent(context, ShakeSensorService::class.java)
-            context.stopService(intent)
-            context.getSharedPreferences("helpme_prefs", Context.MODE_PRIVATE).edit().putBoolean("shake_sos_enabled", false).apply()
-            call.resolve()
-        } catch (e: Exception) {
-            call.reject("Failed to stop shake listener", e)
-        }
-    }
 
     @PluginMethod
     fun openAppSettings(call: PluginCall) {
