@@ -3,14 +3,15 @@ package com.helpme.app
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.os.Build
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
+import androidx.work.OneTimeWorkRequest
+import androidx.work.OutOfQuotaPolicy
+import androidx.work.WorkManager
+import java.util.concurrent.TimeUnit
 
 /**
- * Automatically restarts the WakeWordService (Voice SOS) after a device reboot,
- * if the user had previously enabled it.
+ * Automatically restarts the WakeWordService and ShakeSensorService after a device reboot,
+ * if the user had previously enabled them.
  */
 class BootReceiver : BroadcastReceiver() {
     
@@ -23,46 +24,36 @@ class BootReceiver : BroadcastReceiver() {
             intent.action == "android.intent.action.QUICKBOOT_POWERON" ||
             intent.action == "com.htc.intent.action.QUICKBOOT_POWERON") {
             
-            Log.d(TAG, "Device booted — checking if Voice SOS should restart")
+            Log.d(TAG, "Device booted — checking if SOS services should restart")
             
             val prefs = context.getSharedPreferences("helpme_prefs", Context.MODE_PRIVATE)
             val voiceSosEnabled = prefs.getBoolean("voice_sos_enabled", false)
+            val shakeSosEnabled = prefs.getBoolean("shake_sos_enabled", false)
             
             if (voiceSosEnabled) {
-                Log.d(TAG, "Voice SOS was enabled — scheduling WakeWordService restart in 15 seconds")
-                Handler(Looper.getMainLooper()).postDelayed({
-                    try {
-                        val serviceIntent = Intent(context, WakeWordService::class.java)
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            context.startForegroundService(serviceIntent)
-                        } else {
-                            context.startService(serviceIntent)
-                        }
-                        Log.d(TAG, "WakeWordService restart initiated successfully")
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to restart WakeWordService after boot", e)
-                    }
-                }, 15000)
-            } else {
-                Log.d(TAG, "Voice SOS was not enabled — skipping restart")
+                Log.d(TAG, "Voice SOS was enabled — Enqueueing BootStart worker")
+                try {
+                    val request = OneTimeWorkRequest.Builder(VoiceServiceHealthWorker::class.java)
+                        .setInitialDelay(10, TimeUnit.SECONDS) // Delay to let system settle
+                        .addTag("BOOT_VOICE_RESTART")
+                        .build()
+                    WorkManager.getInstance(context).enqueue(request)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to enqueue VoiceServiceHealthWorker", e)
+                }
             }
-
-            val shakeSosEnabled = prefs.getBoolean("shake_sos_enabled", false)
+            
             if (shakeSosEnabled) {
-                Log.d(TAG, "Shake SOS was enabled — scheduling ShakeSensorService restart in 15 seconds")
-                Handler(Looper.getMainLooper()).postDelayed({
-                    try {
-                        val serviceIntent = Intent(context, ShakeSensorService::class.java)
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            context.startForegroundService(serviceIntent)
-                        } else {
-                            context.startService(serviceIntent)
-                        }
-                        Log.d(TAG, "ShakeSensorService restart initiated successfully")
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to restart ShakeSensorService after boot", e)
-                    }
-                }, 15000)
+                Log.d(TAG, "Shake SOS was enabled — Enqueueing BootStart worker")
+                try {
+                    val request = OneTimeWorkRequest.Builder(ShakeServiceHealthWorker::class.java)
+                        .setInitialDelay(5, TimeUnit.SECONDS)
+                        .addTag("BOOT_SHAKE_RESTART")
+                        .build()
+                    WorkManager.getInstance(context).enqueue(request)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to enqueue ShakeServiceHealthWorker", e)
+                }
             }
         }
     }

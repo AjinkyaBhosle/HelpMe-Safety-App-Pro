@@ -316,6 +316,15 @@ class SmsPlugin : Plugin() {
     @PluginMethod
     fun startShakeListener(call: PluginCall) {
         try {
+            val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as android.hardware.SensorManager
+            val linear = sensorManager.getDefaultSensor(android.hardware.Sensor.TYPE_LINEAR_ACCELERATION)
+            val acc = sensorManager.getDefaultSensor(android.hardware.Sensor.TYPE_ACCELEROMETER)
+            
+            if (linear == null && acc == null) {
+                call.reject("Device does not support motion sensors.")
+                return
+            }
+
             val intent = Intent(context, ShakeSensorService::class.java)
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)

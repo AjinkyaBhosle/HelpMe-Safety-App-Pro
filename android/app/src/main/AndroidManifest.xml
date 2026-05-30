@@ -23,6 +23,7 @@
     <!-- Required for Android 14+ -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     
     <!-- Advanced OEM Background Persistence -->
@@ -82,9 +83,12 @@
         <!-- Shake-to-SOS Sensor Service -->
         <service
             android:name=".ShakeSensorService"
-            android:foregroundServiceType="location"
+            android:foregroundServiceType="specialUse"
             android:stopWithTask="false"
-            android:exported="false" />
+            android:exported="false">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                      android:value="emergency safety shake detection" />
+        </service>
             
         <receiver
             android:name=".VoiceRestartReceiver"
@@ -92,6 +96,15 @@
             android:exported="false">
             <intent-filter>
                 <action android:name="com.ajinkya.helpme.RESTART_VOICE_SOS" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".ShakeRestartReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.ajinkya.helpme.RESTART_SHAKE_SOS" />
             </intent-filter>
         </receiver>
 
