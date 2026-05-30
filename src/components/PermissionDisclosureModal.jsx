@@ -112,7 +112,7 @@ const PermissionDisclosureModal = ({ isOpen, onAccept }) => {
                             <div>
                                 <h3 className="text-white font-medium text-sm">Background Reliability Settings</h3>
                                 <p className="text-zinc-500 text-xs mt-1 mb-3">
-                                    To ensure Voice SOS and Safety Timer stay active 24/7 without Android silently killing them, you must configure four critical settings in your phone's App Info:
+                                    To ensure Voice SOS and Safety Timer stay active 24/7 without Android silently killing them, you must configure these critical background settings:
                                 </p>
                                 
                                 <div className="bg-amber-950/20 border border-amber-900/40 rounded-xl overflow-hidden text-[11px] mb-2">
@@ -133,8 +133,9 @@ const PermissionDisclosureModal = ({ isOpen, onAccept }) => {
                                         <p className="text-zinc-300 ml-5"><b>Allow</b> (ensures the foreground service and alerts are never suppressed).</p>
                                     </div>
                                     <div className="p-3">
-                                        <p className="font-semibold text-amber-400 mb-1 flex items-center gap-1.5"><span className="text-amber-500">⑤</span> Lock in Recent Apps</p>
-                                        <p className="text-zinc-300 ml-5">Open your <b>Recent Apps</b> screen and <b>Lock</b> (🔒) the Help Me! card so the OS doesn't kill it to save RAM.</p>
+                                        <p className="font-semibold text-amber-400 mb-1 flex items-center gap-1.5"><span className="text-amber-500">⑤</span> Prevent App from Sleeping</p>
+                                        <p className="text-zinc-300 ml-5"><b>Why:</b> Your phone will naturally try to put this app to sleep to save battery, which will break the SOS microphone.</p>
+                                        <p className="text-zinc-300 ml-5 mt-1"><b>How:</b> Swipe up to view your open apps, tap the 3 dots on the Help Me! card (or swipe down on it), and select <b>Lock (🔒)</b>. This forces your phone to keep the SOS active.</p>
                                     </div>
                                 </div>
                                 <div className="mt-2 p-2.5 bg-blue-900/20 border border-blue-800/40 rounded-lg">
