@@ -22,3 +22,20 @@ Rewrite the native Android camera pipeline in `SafetyCameraPlugin.kt` to interce
 - Need to manually handle device-specific camera rotations and aspect ratios.
 - Need to manually multiplex and sync microphone audio with the video frames.
 - This would replace the current `CameraX` + `FFmpegKit` implementation for video.
+
+## Pro Tier Feature Pipeline
+
+**1. Shake-to-SOS**
+- **Description:** An accelerometer-based fallback for when speech is impossible.
+- **Implementation:** Run a lightweight background `SensorEventListener` for `Sensor.TYPE_ACCELEROMETER`. Detect rapid back-and-forth acceleration peaks over a short time window.
+- **Tier:** Pro (Companion to Voice SOS)
+
+**2. One-Tap Fake Call**
+- **Description:** A common "I'm in trouble, get me out of this" feature that triggers an incoming-call screen with audio without touching the real SOS flow.
+- **Implementation:** Create a custom full-screen Android Activity (`FakeCallActivity.kt`) that perfectly mimics a generic Android incoming call screen, complete with playing the default `RingtoneManager` sound. Allow users to customize the fake caller ID name.
+- **Tier:** Pro
+
+**3. Trail (Breadcrumbs / Safe Route)**
+- **Description:** Allows a user who is walking home or hiking to record and track their location trail for a specific duration (day, week, month).
+- **Implementation:** Utilize the existing `ACCESS_BACKGROUND_LOCATION` permission. Run a WorkManager or Foreground Service that logs the GPS coordinates to a local SQLite database table (`trail_history`) every X minutes. Build a React UI to query this database and draw `Polyline` paths on a Google Map.
+- **Tier:** Pro
