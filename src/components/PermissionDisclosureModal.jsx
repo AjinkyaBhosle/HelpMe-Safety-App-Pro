@@ -128,9 +128,13 @@ const PermissionDisclosureModal = ({ isOpen, onAccept }) => {
                                         <p className="font-semibold text-amber-400 mb-1 flex items-center gap-1.5"><span className="text-amber-500">③</span> App Unused</p>
                                         <p className="text-zinc-300 ml-5">Turn OFF <b>"Manage app if unused"</b> to prevent permissions from being revoked.</p>
                                     </div>
-                                    <div className="p-3">
+                                    <div className="p-3 border-b border-amber-900/20">
                                         <p className="font-semibold text-amber-400 mb-1 flex items-center gap-1.5"><span className="text-amber-500">④</span> Do Not Disturb</p>
                                         <p className="text-zinc-300 ml-5"><b>Allow</b> (ensures the foreground service and alerts are never suppressed).</p>
+                                    </div>
+                                    <div className="p-3">
+                                        <p className="font-semibold text-amber-400 mb-1 flex items-center gap-1.5"><span className="text-amber-500">⑤</span> Disable OS Shake Gestures</p>
+                                        <p className="text-zinc-300 ml-5">Search your phone settings for <b>"Shake"</b> and set it to <b>None</b> so it doesn't conflict with Shake-to-SOS.</p>
                                     </div>
                                 </div>
                                 <div className="mt-2 p-2.5 bg-blue-900/20 border border-blue-800/40 rounded-lg">
