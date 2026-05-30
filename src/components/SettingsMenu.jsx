@@ -188,7 +188,7 @@ const SettingsMenu = ({ isOpen, onClose, onNavigate, isPro, onUpgradeRequest }) 
                     
                     const shakeTorchRes = await SmsPlugin.showConfirm({
                         title: "Disable OS Shake Gestures",
-                        message: "To ensure Shake-to-SOS works flawlessly, you must disable any OS-level 'Shake to launch' features (like Shake for Flashlight or Camera).\n\nTap OK to open Settings, then search for 'Shake', 'Gesture', or 'Motion' and set the feature to 'None'."
+                        message: "To ensure Shake-to-SOS works flawlessly, you must disable any OS-level 'Shake to launch' features (like Shake for Torch or Camera).\n\nTap OK to open Settings, then search for 'Shake', 'Gesture', or 'Motion' and set the feature to 'None'."
                     });
                     if (shakeTorchRes.value) {
                         await SmsPlugin.openMainSettings();
