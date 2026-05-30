@@ -31,7 +31,7 @@ class ShakeSensorService : Service(), SensorEventListener {
     private val SHAKE_THRESHOLD_GRAVITY = 2.7f
     private val SHAKE_SLOP_TIME_MS = 500
     private val SHAKE_COUNT_RESET_TIME_MS = 3000
-    private val SHAKE_MIN_COUNT = 4
+    private val SHAKE_MIN_COUNT = 6
 
     private var mShakeTimestamp: Long = 0
     private var mShakeCount = 0
@@ -189,9 +189,13 @@ class ShakeSensorService : Service(), SensorEventListener {
         val intent = Intent("com.ajinkya.helpme.VOICE_PANIC") // Reusing same broadcast so React handles it identically
         sendBroadcast(intent)
 
-        // Trigger native emergency call
-        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-            EmergencyCallHelper.makeEmergencyCall(this@ShakeSensorService, contacts.firstOrNull())
-        }
+        // 2. Enqueue WorkManager for Native Offline SMS and Call
+        val request = androidx.work.OneTimeWorkRequest.Builder(AlertWorker::class.java)
+            .setExpedited(androidx.work.OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            .addTag("PANIC_BUTTON_SHAKE")
+            .build()
+        
+        androidx.work.WorkManager.getInstance(applicationContext).enqueue(request)
+        Log.d(TAG, "Native AlertWorker Enqueued successfully from Shake")
     }
 }
