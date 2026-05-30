@@ -48,6 +48,7 @@ class WakeWordService : Service(), RecognitionListener {
     private var wakeLock: PowerManager.WakeLock? = null
     private var audioManager: android.media.AudioManager? = null
     private var audioRecordingCallback: Any? = null
+    private var silentPlayer: android.media.MediaPlayer? = null
     
     private var telephonyManager: TelephonyManager? = null
     private var telephonyCallback: Any? = null
@@ -93,6 +94,7 @@ class WakeWordService : Service(), RecognitionListener {
         Log.d(TAG, "WakeWordService Created")
         acquireWakeLock()
         showNotification(ListenerState.STARTING, "Starting microphone...")
+        startSilentAudio()
         cleanStaleCachedModels()
         initModel()
         watchdogHandler.postDelayed(watchdogRunnable, 15_000)
@@ -264,6 +266,85 @@ class WakeWordService : Service(), RecognitionListener {
         }
 
         super.onTaskRemoved(rootIntent)
+    }
+
+    private fun startSilentAudio() {
+        try {
+            val silentFile = java.io.File(cacheDir, "silence.wav")
+            if (!silentFile.exists()) {
+                // Generate a 1-second silent WAV file (8000Hz, Mono, 16-bit)
+                java.io.FileOutputStream(silentFile).use { out ->
+                    val sampleRate = 8000
+                    val channels = 1
+                    val bitsPerSample = 16
+                    val totalAudioLen = sampleRate * channels * (bitsPerSample / 8) // 1 second = 16000 bytes
+                    val totalDataLen = totalAudioLen + 36
+                    val byteRate = sampleRate * channels * bitsPerSample / 8
+
+                    // Write WAV Header
+                    out.write("RIFF".toByteArray()) // ChunkID
+                    out.write(byteArrayOf(
+                        (totalDataLen and 0xff).toByte(),
+                        ((totalDataLen shr 8) and 0xff).toByte(),
+                        ((totalDataLen shr 16) and 0xff).toByte(),
+                        ((totalDataLen shr 24) and 0xff).toByte()
+                    )) // ChunkSize
+                    out.write("WAVE".toByteArray()) // Format
+                    out.write("fmt ".toByteArray()) // Subchunk1ID
+                    out.write(byteArrayOf(16, 0, 0, 0)) // Subchunk1Size (16 for PCM)
+                    out.write(byteArrayOf(1, 0)) // AudioFormat (1 for PCM)
+                    out.write(byteArrayOf(channels.toByte(), 0)) // NumChannels
+                    out.write(byteArrayOf(
+                        (sampleRate and 0xff).toByte(),
+                        ((sampleRate shr 8) and 0xff).toByte(),
+                        ((sampleRate shr 16) and 0xff).toByte(),
+                        ((sampleRate shr 24) and 0xff).toByte()
+                    )) // SampleRate
+                    out.write(byteArrayOf(
+                        (byteRate and 0xff).toByte(),
+                        ((byteRate shr 8) and 0xff).toByte(),
+                        ((byteRate shr 16) and 0xff).toByte(),
+                        ((byteRate shr 24) and 0xff).toByte()
+                    )) // ByteRate
+                    out.write(byteArrayOf((channels * bitsPerSample / 8).toByte(), 0)) // BlockAlign
+                    out.write(byteArrayOf(bitsPerSample.toByte(), 0)) // BitsPerSample
+                    out.write("data".toByteArray()) // Subchunk2ID
+                    out.write(byteArrayOf(
+                        (totalAudioLen and 0xff).toByte(),
+                        ((totalAudioLen shr 8) and 0xff).toByte(),
+                        ((totalAudioLen shr 16) and 0xff).toByte(),
+                        ((totalAudioLen shr 24) and 0xff).toByte()
+                    )) // Subchunk2Size
+
+                    // Write 1 second of silence (zeros)
+                    out.write(ByteArray(totalAudioLen))
+                }
+                Log.d(TAG, "Generated silent WAV file in cache: ${silentFile.absolutePath}")
+            }
+
+            silentPlayer = android.media.MediaPlayer().apply {
+                setDataSource(silentFile.absolutePath)
+                isLooping = true
+                setVolume(0.0f, 0.0f)
+                prepare()
+                start()
+            }
+            Log.d(TAG, "Silent audio player started successfully (looping)")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start silent audio player", e)
+        }
+    }
+
+    private fun stopSilentAudio() {
+        try {
+            silentPlayer?.stop()
+            silentPlayer?.release()
+            Log.d(TAG, "Silent audio player stopped and released")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to stop silent audio player", e)
+        } finally {
+            silentPlayer = null
+        }
     }
 
     private fun acquireWakeLock() {
@@ -617,6 +698,7 @@ class WakeWordService : Service(), RecognitionListener {
         try {
             wakeLock?.release()
         } catch (e: Exception) {}
+        stopSilentAudio()
         Log.d(TAG, "WakeWordService Destroyed")
         
         // Final fallback logic removed to prevent overlapping restart loops 

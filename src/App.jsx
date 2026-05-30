@@ -435,7 +435,7 @@ function App() {
     } catch (batErr) {
       console.warn("Failed to check battery optimization", batErr);
     }
-    
+
     try {
       const alarmStatus = await SmsPlugin.canScheduleExactAlarms();
       const hasPromptedAlarms = localStorage.getItem('prompted_alarms');
@@ -515,6 +515,40 @@ function App() {
       }
     } catch (dndErr) {
       console.warn("Failed to check DND bypass status", dndErr);
+    }
+
+    try {
+      const hasPromptedAutoStart = localStorage.getItem('prompted_autostart');
+      if (!hasPromptedAutoStart) {
+        const autoStartConfirmRes = await SmsPlugin.showConfirm({
+          title: "Enable AutoStart Whitelisting",
+          message: "To ensure 'Voice SOS' starts automatically when your phone reboots and survives aggressive background cleaning, please enable AutoStart for 'Help Me!' in the next screen (if available on your device)."
+        });
+        if (autoStartConfirmRes.value) {
+          localStorage.setItem('prompted_autostart', 'true');
+          await SmsPlugin.openAutoStartSettings();
+          await waitForAppResume();
+        } else {
+          localStorage.setItem('prompted_autostart', 'true');
+        }
+      }
+    } catch (autoStartErr) {
+      console.warn("Failed to open AutoStart settings", autoStartErr);
+    }
+
+    try {
+      const hasPromptedLock = localStorage.getItem('prompted_lock_memory');
+      if (!hasPromptedLock) {
+        await SmsPlugin.showConfirm({
+          title: "Lock App in Memory (Recommended)",
+          message: "To complete the setup and ensure Voice SOS runs 24/7:\n\n1. Tap OK to close this prompt.\n2. Minimize this app (tap □ / Home button).\n3. Open your phone's Recent Apps screen (tap ☰ or swipe up).\n4. Tap the 3 dots (⋮ / ⋯) above the 'Help Me!' preview window and tap Lock (🔒).\n\nThis keeps the background safety listener active forever!",
+          okButton: "OK",
+          cancelButton: "Skip"
+        });
+        localStorage.setItem('prompted_lock_memory', 'true');
+      }
+    } catch (lockErr) {
+      console.warn("Failed to show lock memory dialog", lockErr);
     }
   };
 

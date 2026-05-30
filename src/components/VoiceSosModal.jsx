@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Shield, AlertTriangle } from 'lucide-react';
+import { X, Shield, AlertTriangle, ExternalLink } from 'lucide-react';
 import { hapticService } from '../services/HapticService';
 import { registerPlugin } from '@capacitor/core';
 

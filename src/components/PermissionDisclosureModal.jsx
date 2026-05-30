@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, AlertTriangle, Check, Send, Phone, MapPin, Mic, Camera, Battery } from 'lucide-react';
+import { Shield, AlertTriangle, Check, Send, Phone, MapPin, Mic, Camera, Battery, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { hapticService } from '../services/HapticService';
 import { registerPlugin } from '@capacitor/core';

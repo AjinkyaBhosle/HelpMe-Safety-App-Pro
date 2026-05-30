@@ -36,12 +36,18 @@ To prevent the app from falling into a deep "App Standby Bucket" (e.g., the "Rar
 - **VoiceRestartReceiver:** Listens for various system broadcasts and internal triggers to aggressively bounce the service back to life.
 - **TaskRemoved:** Uses a shotgun approach (immediate broadcast + delayed alarm) to restart the service if the user accidentally swipes the app away from recents.
 
+## 8. The Silent Audio Trick
+- Plays a dynamically-generated completely silent 1-second `.wav` file on an infinite loop via `MediaPlayer` inside the Foreground Service (`WakeWordService`).
+- Because it acts as an active media output stream, the Android OS treats the safety app similar to Spotify or a music player, significantly lowering its priority for being killed by battery managers.
+
+## 9. OEM AutoStart Settings Whitelisting
+- Aggressive custom OEM battery savers (Xiaomi's MIUI/HyperOS, Oppo's ColorOS, Vivo's FuntouchOS, etc.) completely block apps from running in the background unless they are toggled "ON" in a hidden settings screen called "AutoStart" or "Startup Manager".
+- The app maintains a library of intents that target these brand-specific settings screens. The user can tap direct shortcuts in the permission disclosure and Voice SOS settings to open their device's AutoStart menu and manually toggle the app to **ON**.
+
 ---
 
 ## Future "Nuclear" Options (If Needed)
 
 If users still report the app dying after several days, these are the final escalation strategies:
 
-1. **The Silent Audio Trick:** Play a completely silent 1-second `.wav` file on an infinite loop via `MediaPlayer` inside the Foreground Service. The OS will treat the app like Spotify actively playing music and refuse to kill it.
-2. **OEM AutoStart Intent Library:** Use a community library to detect the specific OEM (Xiaomi/Oppo) and programmatically launch their hidden "AutoStart Settings" activity, forcing the user to manually whitelist the app.
-3. **FCM Server Pings:** Have a backend server send a high-priority Firebase Cloud Message to the device once a day to wake it up via push notification.
+1. **FCM Server Pings:** Have a backend server send a high-priority Firebase Cloud Message to the device once a day to wake it up via push notification.
