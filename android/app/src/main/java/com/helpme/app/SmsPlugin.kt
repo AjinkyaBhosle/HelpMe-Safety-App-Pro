@@ -356,6 +356,18 @@ class SmsPlugin : Plugin() {
     }
 
     @PluginMethod
+    fun openMainSettings(call: PluginCall) {
+        try {
+            val intent = Intent(Settings.ACTION_SETTINGS)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+            call.resolve()
+        } catch (e: Exception) {
+            call.reject("Could not open main settings: " + e.message)
+        }
+    }
+
+    @PluginMethod
     fun showConfirm(call: PluginCall) {
         val title = call.getString("title", "Permission Required")
         val message = call.getString("message", "")

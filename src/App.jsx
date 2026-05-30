@@ -519,6 +519,25 @@ function App() {
     } catch (dndErr) {
       console.warn("Failed to check DND bypass status", dndErr);
     }
+
+    try {
+      const hasPromptedShakeTorch = localStorage.getItem('prompted_shake_torch');
+      if (!hasPromptedShakeTorch) {
+        const shakeTorchRes = await SmsPlugin.showConfirm({
+          title: "Disable OS Shake Torch",
+          message: "To ensure Shake-to-SOS works flawlessly without turning on your flashlight, you must disable the OS-level 'Shake to launch' feature.\n\nTap OK to open Settings, then search for 'Torch' or 'Shake' and set it to 'None'."
+        });
+        if (shakeTorchRes.value) {
+          localStorage.setItem('prompted_shake_torch', 'true');
+          await SmsPlugin.openMainSettings();
+          await waitForAppResume();
+        } else {
+          localStorage.setItem('prompted_shake_torch', 'true');
+        }
+      }
+    } catch (shakeErr) {
+      console.warn("Failed to prompt shake torch", shakeErr);
+    }
   };
 
   const handleDisclosureAccept = async () => {
