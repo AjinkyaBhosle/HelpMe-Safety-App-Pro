@@ -35,17 +35,29 @@ object VoiceSettings {
     }
 
     fun isVoiceSosEnabled(context: Context): Boolean {
-        // Verify via cross-process safe file sentinel
-        try {
-            val file = File(context.filesDir, "voice_sos_enabled.bin")
-            return file.exists()
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to check cross-process sentinel, falling back to prefs", e)
+        val file = File(context.filesDir, "voice_sos_enabled.bin")
+        if (file.exists()) {
+            return true
         }
         
-        // Fallback to standard SharedPreferences if file system fails
+        // Fallback/Inversion cure: If the sentinel file is missing, verify with SharedPreferences
         val prefs = context.getSharedPreferences("helpme_prefs", Context.MODE_PRIVATE)
-        return prefs.getBoolean("voice_sos_enabled", false)
+        val prefsEnabled = prefs.getBoolean("voice_sos_enabled", false)
+        
+        // Self-healing: if SharedPreferences state is true but the sentinel file is missing, restore it
+        if (prefsEnabled) {
+            try {
+                if (!file.exists()) {
+                    file.createNewFile()
+                }
+                Log.d(TAG, "Self-healed sentinel file discrepancy (restored voice_sos_enabled.bin)")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to restore sentinel file during self-healing", e)
+            }
+            return true
+        }
+        
+        return false
     }
 
     fun scheduleHeartbeat(context: Context) {

@@ -415,6 +415,26 @@ function App() {
     }
 
     try {
+      if (Capacitor.getPlatform() === 'android') {
+        const bucketRes = await SmsPlugin.getAppStandbyBucket();
+        if (bucketRes.bucket === 'RESTRICTED' || bucketRes.bucket === 'RARE') {
+          const bucketConfirmRes = await SmsPlugin.showConfirm({
+            title: "Battery Warning: Standby Bucket",
+            message: `⚠️ WARNING:\n\nYour phone has placed 'Help Me!' in the '${bucketRes.bucket}' App Standby Bucket.\n\nIn this bucket, Android will delay or disable your background safety listener to save battery.\n\nTo fix this:\n1. Tap OK to open settings.\n2. Tap 'Battery' or 'Battery usage'.\n3. Select 'Unrestricted' or 'Allow background activity'.`,
+            okButton: "Open Settings",
+            cancelButton: "Ignore"
+          });
+          if (bucketConfirmRes.value) {
+            await SmsPlugin.openAppSettings();
+            await waitForAppResume();
+          }
+        }
+      }
+    } catch (bucketErr) {
+      console.warn("Failed to check standby bucket", bucketErr);
+    }
+
+    try {
       const overlayStatus = await SmsPlugin.checkOverlayPermission();
       const hasPromptedOverlay = localStorage.getItem('prompted_overlay');
       if (!overlayStatus.granted || !hasPromptedOverlay) {
