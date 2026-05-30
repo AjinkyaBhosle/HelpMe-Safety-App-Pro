@@ -24,16 +24,14 @@ class ShakeSensorService : Service(), SensorEventListener {
     private var accelerometer: Sensor? = null
 
     // Shake detection parameters
-    private val SHAKE_THRESHOLD = 20.0f // m/s^2 (excluding gravity) - Increased for heavier shakes
-    private val SHAKE_SLOP_TIME_MS = 100 // Short enough to catch reverse stroke, long enough to debounce
-    private val SHAKE_COUNT_RESET_TIME_MS = 2500
-    private val SHAKE_MIN_COUNT = 5 // 5 alternating peaks = 2.5 full back-and-forth cycles
+    private val SHAKE_THRESHOLD = 15.0f // m/s^2 (excluding gravity)
+    private val SHAKE_SLOP_TIME_MS = 200 // Max 1 count per 200ms to prevent double-counting a single stroke
+    private val SHAKE_COUNT_RESET_TIME_MS = 2000 // Reset if no shake for 2 seconds
+    private val SHAKE_MIN_COUNT = 6 // Requires roughly 1.2 seconds of sustained shaking
     private val COOLDOWN_MS = 10000L
 
     private var mShakeTimestamp: Long = 0
     private var mShakeCount = 0
-    private var lastShakeAxis = -1
-    private var lastShakeSign = 0
 
     // Low-pass filter for gravity
     private val gravity = FloatArray(3)
@@ -207,38 +205,19 @@ class ShakeSensorService : Service(), SensorEventListener {
 
             if (mShakeTimestamp + SHAKE_COUNT_RESET_TIME_MS < now) {
                 mShakeCount = 0
-                lastShakeAxis = -1
-                lastShakeSign = 0
             }
 
-            // Determine dominant axis
-            val absX = abs(linearX)
-            val absY = abs(linearY)
-            val absZ = abs(linearZ)
+            mShakeTimestamp = now
+            mShakeCount++
 
-            val axis = if (absX > absY && absX > absZ) 0 else if (absY > absX && absY > absZ) 1 else 2
-            val sign = if (when(axis) { 0 -> linearX; 1 -> linearY; else -> linearZ } > 0) 1 else -1
+            Log.d(TAG, "Shake detected! Count: $mShakeCount / $SHAKE_MIN_COUNT, Force: $magnitude")
+            playFeedback(mShakeCount)
 
-            // Axis reversal check: Must alternate sign on the same axis, or switch to a new axis entirely
-            if (mShakeCount == 0 || (axis == lastShakeAxis && sign != lastShakeSign) || (axis != lastShakeAxis)) {
-                mShakeTimestamp = now
-                mShakeCount++
-                lastShakeAxis = axis
-                lastShakeSign = sign
-
-                Log.d(TAG, "Shake detected! Count: $mShakeCount / $SHAKE_MIN_COUNT, Force: $magnitude")
-                
-                // Play small beep/vibrate for intermediate counts, big one for final
-                playFeedback(mShakeCount)
-
-                if (mShakeCount >= SHAKE_MIN_COUNT) {
-                    Log.w(TAG, "SHAKE-TO-SOS TRIGGERED!")
-                    prefs.edit().putLong("lastShakeTriggerTime", now).apply()
-                    mShakeCount = 0
-                    triggerPanic()
-                }
-            } else {
-                Log.d(TAG, "Shake rejected - did not alternate axis sign (Axis: $axis, Sign: $sign)")
+            if (mShakeCount >= SHAKE_MIN_COUNT) {
+                Log.w(TAG, "SHAKE-TO-SOS TRIGGERED!")
+                prefs.edit().putLong("lastShakeTriggerTime", now).apply()
+                mShakeCount = 0
+                triggerPanic()
             }
         }
     }
