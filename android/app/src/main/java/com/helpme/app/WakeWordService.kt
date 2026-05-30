@@ -85,6 +85,7 @@ class WakeWordService : Service(), RecognitionListener {
         Log.d(TAG, "WakeWordService Created")
         acquireWakeLock()
         showNotification(ListenerState.STARTING, "Starting microphone...")
+        cleanStaleCachedModels()
         initModel()
         watchdogHandler.postDelayed(watchdogRunnable, 30_000)
 
@@ -234,6 +235,16 @@ class WakeWordService : Service(), RecognitionListener {
             Log.w(TAG, "Watchdog detected silent audio freeze (no frames in ${elapsed}ms). Restarting recognizer!")
             showNotification(ListenerState.STALLED, "Recognizer stalled — recovering...")
             startListening()
+        }
+    }
+
+    private fun cleanStaleCachedModels() {
+        // Remove the old "model" directory from before the US/IN rename
+        // to prevent Vosk StorageService from getting confused
+        val oldModelDir = java.io.File(filesDir, "model")
+        if (oldModelDir.exists()) {
+            Log.d(TAG, "Cleaning stale cached model directory: ${oldModelDir.absolutePath}")
+            oldModelDir.deleteRecursively()
         }
     }
 
