@@ -140,7 +140,7 @@ const PermissionDisclosureModal = ({ isOpen, onAccept }) => {
                                         </p>
                                         <p className="text-zinc-300 ml-5 mt-4 font-bold">How to fix this in 3 easy steps:</p>
                                         <ol className="list-decimal ml-9 mt-1 mb-1 space-y-1.5 text-zinc-300 text-[11px]">
-                                            <li>Leave this app open on your screen and minimize the app (or tap <span className="inline-block scale-[1.4] mx-0.5">□</span>).</li>
+                                            <li>Leave this app open on your screen and minimize the app (or by tapping the <span className="inline-block scale-[1.8] mx-1 font-bold">□</span> minimize button).</li>
                                             <li>Open your phone's Recent Apps screen by swiping up from the bottom of your screen (or by tapping the ☰ Recents button).</li>
                                             <li>Tap the 3 dots above the Help Me! app (or swipe down on it) and tap Lock (🔒).</li>
                                         </ol>
