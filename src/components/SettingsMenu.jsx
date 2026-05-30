@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { UserCog, History, Info, X, Flashlight, Siren, Mic, Settings, Shield, Video, Timer, Sparkles, AlertTriangle, HelpCircle, Activity } from 'lucide-react';
+import VoiceSosModal from './VoiceSosModal';
 
 const HumanHeadSpeaking = ({ size = 24, className = "", ...props }) => (
     <svg 
@@ -34,8 +35,7 @@ const SettingsMenu = ({ isOpen, onClose, onNavigate, isPro, onUpgradeRequest }) 
     const [showSoundSelector, setShowSoundSelector] = useState(false);
     const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
     const [showCheckIn, setShowCheckIn] = useState(false);
-    const [showVoiceInfo, setShowVoiceInfo] = useState(false);
-    const [showVoiceDisabled, setShowVoiceDisabled] = useState(false);
+    const [showVoiceModal, setShowVoiceModal] = useState(false);
 
     const freeItems = [
         {
@@ -153,20 +153,7 @@ const SettingsMenu = ({ isOpen, onClose, onNavigate, isPro, onUpgradeRequest }) 
 
         if (action === 'voice') {
             hapticService.medium();
-            const newState = !isVoiceActive;
-            setIsVoiceActive(newState);
-            localStorage.setItem('voiceActivation', newState);
-            try {
-                if (newState) {
-                    await SmsPlugin.startVoiceListener();
-                    setShowVoiceInfo(true);
-                } else {
-                    await SmsPlugin.stopVoiceListener();
-                    setShowVoiceDisabled(true);
-                }
-            } catch (e) {
-                console.error("Failed to toggle voice listener", e);
-            }
+            setShowVoiceModal(true);
             return;
         }
 
@@ -322,78 +309,13 @@ const SettingsMenu = ({ isOpen, onClose, onNavigate, isPro, onUpgradeRequest }) 
                 )}
             </AnimatePresence>
 
-            {/* Voice Info Modal overlay */}
-            <AnimatePresence>
-                {showVoiceInfo && (
-                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-                        <motion.div
-                            initial={{ scale: 0.95, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.95, opacity: 0 }}
-                            className="w-full max-w-sm bg-zinc-900 rounded-3xl border border-zinc-800 shadow-2xl overflow-hidden p-6 text-center"
-                        >
-                            <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-500/30 shadow-[0_0_15px_rgba(34,197,94,0.2)]">
-                                <HumanHeadSpeaking className="w-8 h-8 text-green-500" />
-                            </div>
-                            
-                            <h3 className="text-xl font-bold text-white mb-2">Voice SOS Active</h3>
-                            
-                            <p className="text-sm text-zinc-400 mb-4 leading-relaxed">
-                                Say <b className="text-white">"Help Me"</b> clearly to trigger the SOS alarm, even when your phone is locked and offline.
-                            </p>
-                            
-                            <div className="bg-zinc-800/50 p-3 rounded-xl border border-zinc-700/50 mb-6 text-left space-y-3">
-                                <p className="text-xs text-zinc-300 flex items-start gap-2">
-                                    <Shield className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-                                    <span><b>100% Private:</b> Audio is analyzed by an on-device AI model. Nothing is recorded or sent to the cloud.</span>
-                                </p>
-                                <p className="text-xs text-zinc-300 flex items-start gap-2">
-                                    <AlertTriangle className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
-                                    <span><b>Battery Usage:</b> Continuous listening uses extra battery. We recommend disabling it when you reach a safe location.</span>
-                                </p>
-                            </div>
-                            
-                            <button
-                                onClick={() => { hapticService.light(); setShowVoiceInfo(false); }}
-                                className="w-full bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-600 text-white font-bold py-3.5 rounded-xl transition"
-                            >
-                                Got it
-                            </button>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-
-            {/* Voice Disabled Modal overlay */}
-            <AnimatePresence>
-                {showVoiceDisabled && (
-                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-                        <motion.div
-                            initial={{ scale: 0.95, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.95, opacity: 0 }}
-                            className="w-full max-w-sm bg-zinc-900 rounded-3xl border border-zinc-800 shadow-2xl overflow-hidden p-6 text-center"
-                        >
-                            <div className="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-zinc-700">
-                                <HumanHeadSpeaking className="w-8 h-8 text-zinc-500" />
-                            </div>
-                            
-                            <h3 className="text-xl font-bold text-white mb-2">Voice SOS Disabled</h3>
-                            
-                            <p className="text-sm text-zinc-400 mb-6 leading-relaxed">
-                                The background microphone listener has been completely stopped. You can no longer trigger SOS using your voice.
-                            </p>
-                            
-                            <button
-                                onClick={() => { hapticService.light(); setShowVoiceDisabled(false); }}
-                                className="w-full bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-600 text-white font-bold py-3.5 rounded-xl transition"
-                            >
-                                Close
-                            </button>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+            {/* Voice SOS Modal overlay */}
+            <VoiceSosModal
+                isOpen={showVoiceModal}
+                onClose={() => setShowVoiceModal(false)}
+                isVoiceActive={isVoiceActive}
+                setIsVoiceActive={setIsVoiceActive}
+            />
         </>
     );
 };

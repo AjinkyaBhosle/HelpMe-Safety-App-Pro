@@ -238,11 +238,16 @@ class WakeWordService : Service(), RecognitionListener {
     }
 
     private fun initModel() {
-        Log.d(TAG, "Unpacking Vosk Model...")
-        StorageService.unpack(this, "vosk-model", "model",
+        val prefs = getSharedPreferences("helpme_prefs", Context.MODE_PRIVATE)
+        val accent = prefs.getString("voice_sos_accent", "us") ?: "us"
+        val assetPath = if (accent == "in") "vosk-model-in" else "vosk-model-us"
+        val targetPath = if (accent == "in") "model-in" else "model-us"
+        
+        Log.d(TAG, "Unpacking Vosk Model ($accent)...")
+        StorageService.unpack(this, assetPath, targetPath,
             { model: Model? ->
                 this.model = model
-                Log.d(TAG, "Vosk model loaded successfully")
+                Log.d(TAG, "Vosk model ($accent) loaded successfully")
                 startListening()
             },
             { exception: IOException ->

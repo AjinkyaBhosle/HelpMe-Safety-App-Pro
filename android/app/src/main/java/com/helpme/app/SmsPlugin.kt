@@ -313,6 +313,33 @@ class SmsPlugin : Plugin() {
         }
     }
 
+    @PluginMethod
+    fun setVoiceAccent(call: PluginCall) {
+        try {
+            val accent = call.getString("accent", "us")
+            context.getSharedPreferences("helpme_prefs", Context.MODE_PRIVATE).edit().putString("voice_sos_accent", accent).apply()
+            
+            // Restart the service if it's currently running so the new model loads
+            val isEnabled = context.getSharedPreferences("helpme_prefs", Context.MODE_PRIVATE).getBoolean("voice_sos_enabled", false)
+            if (isEnabled) {
+                val intent = Intent(context, WakeWordService::class.java)
+                context.stopService(intent)
+                
+                // Give it a tiny delay to fully stop before starting
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        context.startForegroundService(intent)
+                    } else {
+                        context.startService(intent)
+                    }
+                }, 500)
+            }
+            call.resolve()
+        } catch (e: Exception) {
+            call.reject("Failed to set voice accent", e)
+        }
+    }
+
 
 
     @PluginMethod
