@@ -17,6 +17,7 @@ import android.os.IBinder
 import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import kotlinx.coroutines.launch
 import kotlin.math.sqrt
 
 class ShakeSensorService : Service(), SensorEventListener {
@@ -189,6 +190,8 @@ class ShakeSensorService : Service(), SensorEventListener {
         sendBroadcast(intent)
 
         // Trigger native emergency call
-        EmergencyCallHelper.makeEmergencyCall(this, contacts.firstOrNull())
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            EmergencyCallHelper.makeEmergencyCall(this@ShakeSensorService, contacts.firstOrNull())
+        }
     }
 }
