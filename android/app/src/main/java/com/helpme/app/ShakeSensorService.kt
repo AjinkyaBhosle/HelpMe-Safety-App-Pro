@@ -24,11 +24,11 @@ class ShakeSensorService : Service(), SensorEventListener {
     private var accelerometer: Sensor? = null
 
     // Shake detection parameters
-    private val SHAKE_THRESHOLD = 13.0f // m/s^2 (excluding gravity)
+    private val SHAKE_THRESHOLD = 20.0f // m/s^2 (excluding gravity) - Increased for heavier shakes
     private val SHAKE_SLOP_TIME_MS = 100 // Short enough to catch reverse stroke, long enough to debounce
     private val SHAKE_COUNT_RESET_TIME_MS = 2500
     private val SHAKE_MIN_COUNT = 5 // 5 alternating peaks = 2.5 full back-and-forth cycles
-    private val COOLDOWN_MS = 10000L
+    private val COOLDOWN_MS = 60000L // 60 seconds cooldown to prevent SMS spam warning
 
     private var mShakeTimestamp: Long = 0
     private var mShakeCount = 0
